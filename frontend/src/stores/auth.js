@@ -34,6 +34,12 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('token', response.data.token)
   }
 
+  async function fetchUser() {
+    const response = await api.get('/user')
+    user.value = response.data
+    localStorage.setItem('user', JSON.stringify(response.data))
+  }
+
   function logout() {
     user.value = null
     token.value = null
@@ -43,5 +49,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = () => !!token.value
 
-  return { user, token, register, login, logout, isAuthenticated }
+  return { user, token, register, login, logout, fetchUser, isAuthenticated }
 })
