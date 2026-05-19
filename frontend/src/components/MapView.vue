@@ -2,12 +2,42 @@
 import { onMounted, onUnmounted, watch, ref } from 'vue'
 import L from 'leaflet'
 import { useEventsStore } from '@/stores/events'
-import { useRouter } from 'vue-router'
 
 const eventsStore = useEventsStore()
-const router = useRouter()
 const mapContainer = ref(null)
 let map = null
+let markers = []
+
+function clearMarkers() {
+  markers.forEach((m) => m.remove())
+  markers = []
+}
+
+function addMarkers() {
+  clearMarkers()
+  eventsStore.events.forEach((event) => {
+    if (!event.latitude || !event.longitude) return
+
+    const marker = L.marker([event.latitude, event.longitude])
+    marker.bindPopup(`
+      <div style="width:200px">
+        ${event.image_url ? `<img src="${event.image_url}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;">` : ''}
+        <strong>${event.title}</strong><br>
+        ${event.city ?? ''}<br>
+        ${event.date ?? ''}<br>
+        <a href="/events/${event.id}" style="color:#1d4ed8;">Voir le détail</a>
+      </div>
+    `)
+    marker.addTo(map)
+    markers.push(marker)
+  })
+}
+
+function onMapMoveEnd() {
+  const bounds = map.getBounds()
+  const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
+  eventsStore.fetchEvents({ bbox })
+}
 
 function initMap() {
   map = L.map(mapContainer.value).setView([50.5, 4.5], 8)
@@ -15,24 +45,8 @@ function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors',
   }).addTo(map)
-}
 
-function addMarkers() {
-  eventsStore.events.forEach((event) => {
-    if (!event.latitude || !event.longitude) return
-
-    const marker = L.marker([event.latitude, event.longitude])
-    marker.bindPopup(`
-  <div style="width:200px">
-    ${event.image_url ? `<img src="${event.image_url}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;">` : ''}
-    <strong>${event.title}</strong><br>
-    ${event.city ?? ''}<br>
-    ${event.date ?? ''}<br>
-    <a href="/events/${event.id}" style="color:#1d4ed8;">Voir le détail</a>
-  </div>
-`)
-    marker.addTo(map)
-  })
+  map.on('moveend', onMapMoveEnd)
 }
 
 onMounted(() => {

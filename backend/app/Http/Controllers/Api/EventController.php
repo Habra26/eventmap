@@ -12,11 +12,23 @@ class EventController extends Controller
     {
         $apiKey = env('TICKETMASTER_API_KEY');
 
-        $response = Http::withoutVerifying()->get('https://app.ticketmaster.com/discovery/v2/events.json', [
+        $params = [
             'apikey' => $apiKey,
-            'countryCode' => 'BE',
-            'size' => 50,
-        ]);
+            'size' => 20,
+        ];
+
+        if ($request->has('bbox')) {
+            [$south, $west, $north, $east] = explode(',', $request->bbox);
+            $centerLat = ($south + $north) / 2;
+            $centerLng = ($west + $east) / 2;
+            $params['geoPoint'] = round($centerLat, 6) . ',' . round($centerLng, 6);
+            $params['radius'] = 50;
+            $params['unit'] = 'km';
+        } else {
+            $params['countryCode'] = 'BE';
+        }
+
+        $response = Http::withoutVerifying()->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
 
         if ($response->failed()) {
             return response()->json(['error' => 'API Ticketmaster indisponible'], 503);
@@ -38,7 +50,8 @@ class EventController extends Controller
                     'ticket_url' => $event['url'] ?? null,
                     'category' => $event['classifications'][0]['segment']['name'] ?? null,
                 ];
-            });
+            })->sortBy('date')
+            ->values();
 
         return response()->json($events);
     }
