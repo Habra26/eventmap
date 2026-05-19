@@ -15,7 +15,7 @@ class EventController extends Controller
         $response = Http::withoutVerifying()->get('https://app.ticketmaster.com/discovery/v2/events.json', [
             'apikey' => $apiKey,
             'countryCode' => 'BE',
-            'size' => 20,
+            'size' => 50,
         ]);
 
         if ($response->failed()) {
@@ -24,13 +24,16 @@ class EventController extends Controller
 
         $events = collect($response->json('_embedded.events') ?? [])
             ->map(function ($event) {
+                $venue = $event['_embedded']['venues'][0] ?? [];
+                [$lat, $lng] = $this->getCoordinates($venue);
+
                 return [
                     'id' => $event['id'],
                     'title' => $event['name'],
                     'date' => $event['dates']['start']['localDate'] ?? null,
-                    'city' => $event['_embedded']['venues'][0]['city']['name'] ?? null,
-                    'latitude' => $event['_embedded']['venues'][0]['location']['latitude'] ?? null,
-                    'longitude' => $event['_embedded']['venues'][0]['location']['longitude'] ?? null,
+                    'city' => $venue['city']['name'] ?? null,
+                    'latitude' => $lat,
+                    'longitude' => $lng,
                     'image_url' => $event['images'][0]['url'] ?? null,
                     'ticket_url' => $event['url'] ?? null,
                     'category' => $event['classifications'][0]['segment']['name'] ?? null,
@@ -68,5 +71,40 @@ class EventController extends Controller
             'category' => $event['classifications'][0]['segment']['name'] ?? null,
             'description' => $event['info'] ?? $event['pleaseNote'] ?? null,
         ]);
+    }
+
+    private function getCoordinates(array $venue): array
+    {
+        $latitude = $venue['location']['latitude'] ?? null;
+        $longitude = $venue['location']['longitude'] ?? null;
+
+        if ($latitude && $longitude) {
+            return [$latitude, $longitude];
+        }
+
+        $address = collect([
+            $venue['address']['line1'] ?? null,
+            $venue['city']['name'] ?? null,
+            $venue['country']['name'] ?? null,
+        ])->filter()->implode(', ');
+
+        if (!$address) {
+            return [null, null];
+        }
+
+        $response = Http::withoutVerifying()
+            ->withHeaders(['User-Agent' => 'EventMap/1.0'])
+            ->get('https://nominatim.openstreetmap.org/search', [
+                'q' => $address,
+                'format' => 'json',
+                'limit' => 1,
+            ]);
+
+        if ($response->ok() && count($response->json()) > 0) {
+            $result = $response->json()[0];
+            return [$result['lat'], $result['lon']];
+        }
+
+        return [null, null];
     }
 }
