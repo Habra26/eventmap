@@ -43,7 +43,7 @@ function switchToMap() {
         :class="activeTab === 'list' ? 'flex' : 'hidden'"
         class="lg:flex w-full lg:w-1/2 flex-col overflow-y-auto px-6 py-6"
       >
-        <h1 class="text-2xl font-medium mb-6">Évènements en Belgique</h1>
+        <h1 class="text-2xl font-medium mb-6">Évènements à venir</h1>
 
         <div v-if="eventsStore.loading" class="text-center text-gray-500 py-12">
           <i class="ti ti-loader text-3xl animate-spin"></i>
@@ -68,7 +68,7 @@ function switchToMap() {
       <!-- Carte -->
       <div
         :class="activeTab === 'map' ? 'flex' : 'hidden'"
-        class="lg:flex w-full lg:w-1/2 sticky top-0"
+        class="lg:flex w-full lg:w-1/2 h-full sticky top-0"
       >
         <MapView />
       </div>
