@@ -16,3 +16,5 @@ Route::get('/user', function (Request $request) {
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::get('/events', [EventController::class, 'index']);
+
+Route::get('/events/{id}', [EventController::class, 'show']);

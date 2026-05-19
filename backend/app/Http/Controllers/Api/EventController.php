@@ -39,4 +39,34 @@ class EventController extends Controller
 
         return response()->json($events);
     }
+
+    public function show(string $id)
+    {
+        $apiKey = env('TICKETMASTER_API_KEY');
+
+        $response = Http::withoutVerifying()->get("https://app.ticketmaster.com/discovery/v2/events/{$id}.json", [
+            'apikey' => $apiKey,
+        ]);
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Évènement introuvable'], 404);
+        }
+
+        $event = $response->json();
+
+        return response()->json([
+            'id' => $event['id'],
+            'title' => $event['name'],
+            'date' => $event['dates']['start']['localDate'] ?? null,
+            'time' => $event['dates']['start']['localTime'] ?? null,
+            'city' => $event['_embedded']['venues'][0]['city']['name'] ?? null,
+            'venue' => $event['_embedded']['venues'][0]['name'] ?? null,
+            'latitude' => $event['_embedded']['venues'][0]['location']['latitude'] ?? null,
+            'longitude' => $event['_embedded']['venues'][0]['location']['longitude'] ?? null,
+            'image_url' => $event['images'][0]['url'] ?? null,
+            'ticket_url' => $event['url'] ?? null,
+            'category' => $event['classifications'][0]['segment']['name'] ?? null,
+            'description' => $event['info'] ?? $event['pleaseNote'] ?? null,
+        ]);
+    }
 }
