@@ -14,9 +14,11 @@ const form = ref({
 })
 
 const error = ref(null)
+const errors = ref({})
 
 async function handleSubmit() {
   error.value = null
+  errors.value = {}
   try {
     await authStore.register(
       form.value.name,
@@ -26,7 +28,11 @@ async function handleSubmit() {
     )
     router.push('/')
   } catch (e) {
-    error.value = e.response?.data?.message ?? 'Une erreur est survenue'
+    if (e.response?.status === 422) {
+      errors.value = e.response.data.errors
+    } else {
+      error.value = e.response?.data?.message ?? 'Une erreur est survenue'
+    }
   }
 }
 </script>
@@ -73,6 +79,7 @@ async function handleSubmit() {
               placeholder="Ton nom"
               class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             />
+            <p v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name[0] }}</p>
           </div>
 
           <div class="mb-4">
@@ -84,6 +91,7 @@ async function handleSubmit() {
               placeholder="ton@email.com"
               class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             />
+            <p v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email[0] }}</p>
           </div>
 
           <div class="mb-4">
@@ -95,6 +103,7 @@ async function handleSubmit() {
               placeholder="••••••••"
               class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             />
+            <p v-if="errors.password" class="text-red-500 text-xs mt-1">{{ errors.password[0] }}</p>
           </div>
 
           <div class="mb-4">
@@ -108,6 +117,9 @@ async function handleSubmit() {
               placeholder="••••••••"
               class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             />
+            <p v-if="errors.password_confirmation" class="text-red-500 text-xs mt-1">
+              {{ errors.password_confirmation[0] }}
+            </p>
           </div>
 
           <p v-if="error" class="text-red-500 text-sm mb-4">{{ error }}</p>
