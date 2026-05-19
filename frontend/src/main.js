@@ -6,6 +6,7 @@ import App from './App.vue'
 import router from './router'
 import '@tabler/icons-webfont/dist/tabler-icons.min.css'
 import './assets/main.css'
+import 'leaflet/dist/leaflet.css'
 
 const app = createApp(App)
 const pinia = createPinia()
