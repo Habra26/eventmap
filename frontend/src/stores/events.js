@@ -6,6 +6,11 @@ export const useEventsStore = defineStore('events', () => {
   const events = ref([])
   const loading = ref(false)
   const error = ref(null)
+  const selectedEventId = ref(null)
+
+  function selectEvent(id) {
+    selectedEventId.value = id
+  }
 
   async function fetchEvents(params = {}) {
     loading.value = true
@@ -20,5 +25,5 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
-  return { events, loading, error, fetchEvents }
+  return { events, loading, error, fetchEvents, selectedEventId, selectEvent }
 })

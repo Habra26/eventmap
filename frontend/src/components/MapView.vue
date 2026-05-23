@@ -7,6 +7,7 @@ const eventsStore = useEventsStore()
 const mapContainer = ref(null)
 let map = null
 let markers = []
+let isProgrammaticMove = false
 
 function clearMarkers() {
   markers.forEach((m) => m.remove())
@@ -34,6 +35,12 @@ function addMarkers() {
 }
 
 function onMapMoveEnd() {
+  if (isProgrammaticMove) {
+    setTimeout(() => {
+      isProgrammaticMove = false
+    }, 1000)
+    return
+  }
   const bounds = map.getBounds()
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
   eventsStore.fetchEvents({ bbox })
@@ -60,6 +67,34 @@ watch(
   () => eventsStore.events,
   () => {
     addMarkers()
+    if (eventsStore.selectedEventId) {
+      const event = eventsStore.events.find((e) => e.id === eventsStore.selectedEventId)
+      if (event?.latitude && event?.longitude) {
+        markers
+          .find((m) => {
+            const pos = m.getLatLng()
+            return pos.lat == event.latitude && pos.lng == event.longitude
+          })
+          ?.openPopup()
+      }
+    }
+  },
+)
+
+watch(
+  () => eventsStore.selectedEventId,
+  (id) => {
+    if (!id || !map) return
+    const event = eventsStore.events.find((e) => e.id === id)
+    if (!event?.latitude || !event?.longitude) return
+    isProgrammaticMove = true
+    map.setView([event.latitude, event.longitude], 12)
+    markers
+      .find((m) => {
+        const pos = m.getLatLng()
+        return pos.lat == event.latitude && pos.lng == event.longitude
+      })
+      ?.openPopup()
   },
 )
 
