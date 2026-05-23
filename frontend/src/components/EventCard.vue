@@ -1,4 +1,8 @@
 <script setup>
+import { useEventsStore } from '@/stores/events'
+
+const eventsStore = useEventsStore()
+
 defineProps({
   event: {
     type: Object,
@@ -9,7 +13,9 @@ defineProps({
 
 <template>
   <div
-    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
+    @click="eventsStore.selectEvent(event.id)"
+    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+    :class="eventsStore.selectedEventId === event.id ? 'ring-2 ring-blue-500' : ''"
   >
     <img
       v-if="event.image_url"
