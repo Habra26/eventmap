@@ -9,7 +9,14 @@ const router = useRouter()
 const mapContainer = ref(null)
 let map = null
 let markers = []
-let isProgrammaticMove = false
+let skipNextMoveEnd = false
+
+function blockNextMoveEnd() {
+  skipNextMoveEnd = true
+  setTimeout(() => {
+    skipNextMoveEnd = false
+  }, 2000)
+}
 
 function clearMarkers() {
   markers.forEach((m) => m.remove())
@@ -33,22 +40,23 @@ function addMarkers() {
     `)
     marker.addTo(map)
     markers.push(marker)
+
     marker.on('click', () => {
+      blockNextMoveEnd()
+      map.panTo([event.latitude, event.longitude])
       eventsStore.selectEvent(event.id)
     })
   })
 }
 
 function onMapMoveEnd() {
-  if (isProgrammaticMove) {
-    setTimeout(() => {
-      isProgrammaticMove = false
-    }, 1500)
+  if (skipNextMoveEnd) {
     return
   }
   const bounds = map.getBounds()
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
-  eventsStore.fetchEvents({ bbox })
+  const params = { ...eventsStore.currentParams, bbox }
+  eventsStore.fetchEvents(params)
 }
 
 function initMap() {
@@ -60,13 +68,7 @@ function initMap() {
 
   map.on('moveend', onMapMoveEnd)
 
-  map.on('popupopen', (e) => {
-    isProgrammaticMove = true
-    map.panTo(e.popup.getLatLng())
-    setTimeout(() => {
-      isProgrammaticMove = false
-    }, 1500)
-
+  map.on('popupopen', () => {
     document.querySelectorAll('.leaflet-detail-link').forEach((el) => {
       el.addEventListener('click', (e) => {
         e.preventDefault()
@@ -88,17 +90,6 @@ watch(
   () => eventsStore.events,
   () => {
     addMarkers()
-    if (eventsStore.selectedEventId) {
-      const event = eventsStore.events.find((e) => e.id === eventsStore.selectedEventId)
-      if (event?.latitude && event?.longitude) {
-        markers
-          .find((m) => {
-            const pos = m.getLatLng()
-            return pos.lat == event.latitude && pos.lng == event.longitude
-          })
-          ?.openPopup()
-      }
-    }
   },
 )
 
@@ -108,7 +99,8 @@ watch(
     if (!id || !map) return
     const event = eventsStore.events.find((e) => e.id === id)
     if (!event?.latitude || !event?.longitude) return
-    isProgrammaticMove = true
+    blockNextMoveEnd()
+    map.panTo([event.latitude, event.longitude])
     markers
       .find((m) => {
         const pos = m.getLatLng()

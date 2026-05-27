@@ -19,7 +19,7 @@ class EventController extends Controller
 
         $params = [
             'apikey' => $apiKey,
-            'size' => 20,
+            'size' => 100,
         ];
 
         if ($request->has('keyword')) {
