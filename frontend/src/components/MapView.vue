@@ -1,9 +1,11 @@
 <script setup>
 import { onMounted, onUnmounted, watch, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import { useEventsStore } from '@/stores/events'
 
 const eventsStore = useEventsStore()
+const router = useRouter()
 const mapContainer = ref(null)
 let map = null
 let markers = []
@@ -26,11 +28,14 @@ function addMarkers() {
         <strong>${event.title}</strong><br>
         ${event.city ?? ''}<br>
         ${event.date ?? ''}<br>
-        <a href="/events/${event.id}" style="color:#1d4ed8;">Voir le détail</a>
+        <a href="#" data-event-id="${event.id}" class="leaflet-detail-link" style="color:#1d4ed8;">Voir le détail</a>
       </div>
     `)
     marker.addTo(map)
     markers.push(marker)
+    marker.on('click', () => {
+      eventsStore.selectEvent(event.id)
+    })
   })
 }
 
@@ -38,7 +43,7 @@ function onMapMoveEnd() {
   if (isProgrammaticMove) {
     setTimeout(() => {
       isProgrammaticMove = false
-    }, 1000)
+    }, 1500)
     return
   }
   const bounds = map.getBounds()
@@ -54,6 +59,22 @@ function initMap() {
   }).addTo(map)
 
   map.on('moveend', onMapMoveEnd)
+
+  map.on('popupopen', (e) => {
+    isProgrammaticMove = true
+    map.panTo(e.popup.getLatLng())
+    setTimeout(() => {
+      isProgrammaticMove = false
+    }, 1500)
+
+    document.querySelectorAll('.leaflet-detail-link').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault()
+        const id = el.getAttribute('data-event-id')
+        router.push(`/events/${id}`)
+      })
+    })
+  })
 }
 
 onMounted(() => {
@@ -88,7 +109,6 @@ watch(
     const event = eventsStore.events.find((e) => e.id === id)
     if (!event?.latitude || !event?.longitude) return
     isProgrammaticMove = true
-    map.setView([event.latitude, event.longitude], 12)
     markers
       .find((m) => {
         const pos = m.getLatLng()
