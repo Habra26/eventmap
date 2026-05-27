@@ -8,13 +8,18 @@ use Illuminate\Support\Facades\Http;
 
 class EventController extends Controller
 {
+    private function httpClient()
+    {
+        return app()->environment('local') ? Http::withoutVerifying() : Http::new();
+    }
+
     public function index(Request $request)
     {
         $apiKey = config('services.ticketmaster.key');
 
         $params = [
             'apikey' => $apiKey,
-            'size' => 20,
+            'size' => 100,
         ];
 
         if ($request->has('keyword')) {
@@ -36,7 +41,7 @@ class EventController extends Controller
             $params['countryCode'] = 'BE';
         }
 
-        $response = (app()->environment('local') ? Http::withoutVerifying() : Http::new())->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
+        $response = $this->httpClient()->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
 
         if ($response->failed()) {
             return response()->json(['error' => 'API Ticketmaster indisponible'], 503);
@@ -69,7 +74,7 @@ class EventController extends Controller
     {
         $apiKey = config('services.ticketmaster.key');
 
-        $response = (app()->environment('local') ? Http::withoutVerifying() : Http::new())->get("https://app.ticketmaster.com/discovery/v2/events/{$id}.json", [
+        $response = $this->httpClient()->get("https://app.ticketmaster.com/discovery/v2/events/{$id}.json", [
             'apikey' => $apiKey,
         ]);
 
@@ -114,7 +119,8 @@ class EventController extends Controller
             return [null, null];
         }
 
-        $response = (app()->environment('local') ? Http::withoutVerifying() : Http::new())
+        $response = $this->httpClient()
+            ->timeout(3)
             ->withHeaders(['User-Agent' => 'EventMap/1.0'])
             ->get('https://nominatim.openstreetmap.org/search', [
                 'q' => $address,

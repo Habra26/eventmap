@@ -1,13 +1,22 @@
 <script setup>
 import { onMounted, onUnmounted, watch, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import { useEventsStore } from '@/stores/events'
 
 const eventsStore = useEventsStore()
+const router = useRouter()
 const mapContainer = ref(null)
 let map = null
 let markers = []
-let isProgrammaticMove = false
+let skipNextMoveEnd = false
+
+function blockNextMoveEnd() {
+  skipNextMoveEnd = true
+  setTimeout(() => {
+    skipNextMoveEnd = false
+  }, 2000)
+}
 
 function clearMarkers() {
   markers.forEach((m) => m.remove())
@@ -26,24 +35,28 @@ function addMarkers() {
         <strong>${event.title}</strong><br>
         ${event.city ?? ''}<br>
         ${event.date ?? ''}<br>
-        <a href="/events/${event.id}" style="color:#1d4ed8;">Voir le détail</a>
+        <a href="#" data-event-id="${event.id}" class="leaflet-detail-link" style="color:#1d4ed8;">Voir le détail</a>
       </div>
     `)
     marker.addTo(map)
     markers.push(marker)
+
+    marker.on('click', () => {
+      blockNextMoveEnd()
+      map.panTo([event.latitude, event.longitude])
+      eventsStore.selectEvent(event.id)
+    })
   })
 }
 
 function onMapMoveEnd() {
-  if (isProgrammaticMove) {
-    setTimeout(() => {
-      isProgrammaticMove = false
-    }, 1000)
+  if (skipNextMoveEnd) {
     return
   }
   const bounds = map.getBounds()
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
-  eventsStore.fetchEvents({ bbox })
+  const params = { ...eventsStore.currentParams, bbox }
+  eventsStore.fetchEvents(params)
 }
 
 function initMap() {
@@ -54,6 +67,16 @@ function initMap() {
   }).addTo(map)
 
   map.on('moveend', onMapMoveEnd)
+
+  map.on('popupopen', () => {
+    document.querySelectorAll('.leaflet-detail-link').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault()
+        const id = el.getAttribute('data-event-id')
+        router.push(`/events/${id}`)
+      })
+    })
+  })
 }
 
 onMounted(() => {
@@ -67,17 +90,6 @@ watch(
   () => eventsStore.events,
   () => {
     addMarkers()
-    if (eventsStore.selectedEventId) {
-      const event = eventsStore.events.find((e) => e.id === eventsStore.selectedEventId)
-      if (event?.latitude && event?.longitude) {
-        markers
-          .find((m) => {
-            const pos = m.getLatLng()
-            return pos.lat == event.latitude && pos.lng == event.longitude
-          })
-          ?.openPopup()
-      }
-    }
   },
 )
 
@@ -87,8 +99,8 @@ watch(
     if (!id || !map) return
     const event = eventsStore.events.find((e) => e.id === id)
     if (!event?.latitude || !event?.longitude) return
-    isProgrammaticMove = true
-    map.setView([event.latitude, event.longitude], 12)
+    blockNextMoveEnd()
+    map.panTo([event.latitude, event.longitude])
     markers
       .find((m) => {
         const pos = m.getLatLng()
