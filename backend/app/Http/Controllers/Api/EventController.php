@@ -17,6 +17,14 @@ class EventController extends Controller
             'size' => 20,
         ];
 
+        if ($request->has('keyword')) {
+            $params['keyword'] = $request->keyword;
+        }
+
+        if ($request->has('city')) {
+            $params['city'] = $request->city;
+        }
+
         if ($request->has('bbox')) {
             [$south, $west, $north, $east] = explode(',', $request->bbox);
             $centerLat = ($south + $north) / 2;
@@ -24,7 +32,7 @@ class EventController extends Controller
             $params['geoPoint'] = round($centerLat, 6) . ',' . round($centerLng, 6);
             $params['radius'] = 50;
             $params['unit'] = 'km';
-        } else {
+        } elseif (!$request->has('keyword') && !$request->has('city')) {
             $params['countryCode'] = 'BE';
         }
 
@@ -50,7 +58,8 @@ class EventController extends Controller
                     'ticket_url' => $event['url'] ?? null,
                     'category' => $event['classifications'][0]['segment']['name'] ?? null,
                 ];
-            })->sortBy('date')
+            })
+            ->sortBy('date')
             ->values();
 
         return response()->json($events);

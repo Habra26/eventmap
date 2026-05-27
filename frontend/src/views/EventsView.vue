@@ -3,6 +3,7 @@ import { onMounted, ref, nextTick } from 'vue'
 import { useEventsStore } from '@/stores/events'
 import EventCard from '@/components/EventCard.vue'
 import MapView from '@/components/MapView.vue'
+import SearchBar from '@/components/SearchBar.vue'
 
 const eventsStore = useEventsStore()
 const activeTab = ref('list')
@@ -44,6 +45,7 @@ function switchToMap() {
         class="lg:flex w-full lg:w-1/2 flex-col overflow-y-auto px-6 py-6"
       >
         <h1 class="text-2xl font-medium mb-6">Évènements à venir</h1>
+        <SearchBar class="mb-6" />
 
         <div v-if="eventsStore.loading" class="text-center text-gray-500 py-12">
           <i class="ti ti-loader text-3xl animate-spin"></i>
