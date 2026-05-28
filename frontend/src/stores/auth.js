@@ -33,6 +33,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     localStorage.setItem('user', JSON.stringify(response.data.user))
     localStorage.setItem('token', response.data.token)
+
+    const favoritesStore = useFavoritesStore()
+    await favoritesStore.fetchFavorites()
   }
 
   async function fetchUser() {
