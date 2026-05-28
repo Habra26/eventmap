@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/axios'
+import { useFavoritesStore } from '@/stores/favorites'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('user')) ?? null)
@@ -46,6 +47,8 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     localStorage.removeItem('user')
     localStorage.removeItem('token')
+    const favoritesStore = useFavoritesStore()
+    favoritesStore.clearFavorites()
   }
 
   const isAuthenticated = () => !!token.value
