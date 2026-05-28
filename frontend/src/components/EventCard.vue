@@ -1,22 +1,52 @@
 <script setup>
+import { computed } from 'vue'
 import { useEventsStore } from '@/stores/events'
+import { useFavoritesStore } from '@/stores/favorites'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 
 const eventsStore = useEventsStore()
+const favoritesStore = useFavoritesStore()
+const authStore = useAuthStore()
+const router = useRouter()
 
-defineProps({
+const props = defineProps({
   event: {
     type: Object,
     required: true,
   },
 })
+
+const isFav = computed(() => favoritesStore.isFavorite(props.event.id))
+
+async function toggleFavorite() {
+  if (!authStore.isAuthenticated()) {
+    router.push({ name: 'login' })
+    return
+  }
+  if (isFav.value) {
+    await favoritesStore.removeFavorite(props.event.id)
+  } else {
+    await favoritesStore.addFavorite(props.event.id)
+  }
+}
 </script>
 
 <template>
   <div
     @click="eventsStore.selectEvent(event.id)"
-    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer relative"
     :class="eventsStore.selectedEventId === event.id ? 'ring-2 ring-blue-500' : ''"
   >
+    <!-- Bouton favori -->
+    <button
+      @click.stop="toggleFavorite"
+      class="absolute top-2 right-2 z-10 bg-white rounded-full p-1.5 shadow hover:scale-110 transition-transform"
+    >
+      <i v-if="isFav" class="ti ti-heart text-xl text-red-500"></i>
+      <i v-else class="ti ti-heart text-xl text-gray-400"></i>
+    </button>
+
     <img
       v-if="event.image_url"
       :src="event.image_url"
