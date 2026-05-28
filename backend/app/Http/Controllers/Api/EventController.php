@@ -15,29 +15,37 @@ class EventController extends Controller
 
     public function index(Request $request)
     {
-        $apiKey = config('services.ticketmaster.key');
-
         $params = [
-            'apikey' => $apiKey,
+            'apikey' => config('services.ticketmaster.key'),
             'size' => 100,
         ];
 
-        if ($request->has('keyword')) {
+        if ($request->filled('keyword')) {
             $params['keyword'] = $request->keyword;
         }
 
-        if ($request->has('city')) {
+        if ($request->filled('city')) {
             $params['city'] = $request->city;
+        }
+
+        if ($request->filled('category')) {
+            $params['classificationName'] = $request->category;
+        }
+
+        if ($request->filled('startDate')) {
+            $params['startDateTime'] = $request->startDate . 'T00:00:00Z';
+        }
+
+        if ($request->filled('endDate')) {
+            $params['endDateTime'] = $request->endDate . 'T23:59:59Z';
         }
 
         if ($request->has('bbox')) {
             [$south, $west, $north, $east] = explode(',', $request->bbox);
-            $centerLat = ($south + $north) / 2;
-            $centerLng = ($west + $east) / 2;
-            $params['geoPoint'] = round($centerLat, 6) . ',' . round($centerLng, 6);
+            $params['geoPoint'] = round(($south + $north) / 2, 6) . ',' . round(($west + $east) / 2, 6);
             $params['radius'] = 50;
             $params['unit'] = 'km';
-        } elseif (!$request->has('keyword') && !$request->has('city')) {
+        } elseif (!$request->filled('keyword') && !$request->filled('city')) {
             $params['countryCode'] = 'BE';
         }
 
@@ -72,10 +80,8 @@ class EventController extends Controller
 
     public function show(string $id)
     {
-        $apiKey = config('services.ticketmaster.key');
-
         $response = $this->httpClient()->get("https://app.ticketmaster.com/discovery/v2/events/{$id}.json", [
-            'apikey' => $apiKey,
+            'apikey' => config('services.ticketmaster.key'),
         ]);
 
         if ($response->failed()) {
