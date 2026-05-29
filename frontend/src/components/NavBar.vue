@@ -25,7 +25,9 @@ async function handleLogout() {
         >
           <i class="ti ti-heart"></i> Favoris
         </RouterLink>
-        <span class="text-blue-200 text-sm">{{ authStore.user?.name }}</span>
+        <RouterLink to="/profile" class="text-blue-200 text-sm hover:text-white">
+          {{ authStore.user?.name }}
+        </RouterLink>
         <button
           @click="handleLogout"
           class="bg-blue-800 text-blue-100 text-sm px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors"

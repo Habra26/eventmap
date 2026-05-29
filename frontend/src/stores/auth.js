@@ -44,8 +44,38 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(response.data))
   }
 
+  async function updateProfile(name, email) {
+    const response = await api.put('/profile', { name, email })
+    user.value = response.data.user
+    localStorage.setItem('user', JSON.stringify(response.data.user))
+    return response.data.message
+  }
+
+  async function updatePassword(currentPassword, password, passwordConfirmation) {
+    const response = await api.put('/profile/password', {
+      current_password: currentPassword,
+      password,
+      password_confirmation: passwordConfirmation,
+    })
+    return response.data.message
+  }
+
+  async function deleteAccount() {
+    await api.delete('/profile')
+    user.value = null
+    token.value = null
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    const favoritesStore = useFavoritesStore()
+    favoritesStore.clearFavorites()
+  }
+
   async function logout() {
-    await api.post('/logout')
+    try {
+      await api.post('/logout')
+    } catch (e) {
+      // token déjà invalide côté serveur, on nettoie quand même
+    }
     user.value = null
     token.value = null
     localStorage.removeItem('user')
@@ -56,5 +86,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = () => !!token.value
 
-  return { user, token, register, login, logout, fetchUser, isAuthenticated }
+  return {
+    user,
+    token,
+    register,
+    login,
+    logout,
+    fetchUser,
+    updateProfile,
+    updatePassword,
+    deleteAccount,
+    isAuthenticated,
+  }
 })

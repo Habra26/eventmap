@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import EventsView from '@/views/EventsView.vue'
 import EventDetailView from '@/views/EventDetailView.vue'
 import FavoritesView from '@/views/FavoritesView.vue'
+import ProfileView from '@/views/ProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,12 @@ const router = createRouter({
       path: '/favorites',
       name: 'favorites',
       component: FavoritesView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileView,
       meta: { requiresAuth: true },
     },
   ],
