@@ -46,7 +46,10 @@ function switchToMap() {
         :class="activeTab === 'list' ? 'flex' : 'hidden'"
         class="lg:flex w-full lg:w-1/2 flex-col overflow-y-auto px-6 py-6"
       >
-        <h1 class="text-2xl font-medium mb-6">Évènements à venir</h1>
+        <div class="mb-6">
+          <h1 class="text-3xl font-bold text-brand-900">Évènements à venir</h1>
+          <p class="text-sm text-gray-500 mt-1">Découvre ce qui se passe près de chez toi</p>
+        </div>
         <SearchBar class="mb-6" />
 
         <Loader v-if="eventsStore.loading" message="Chargement des évènements..." />
