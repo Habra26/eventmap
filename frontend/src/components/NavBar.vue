@@ -19,6 +19,12 @@ async function handleLogout() {
 
     <div class="flex items-center gap-4">
       <template v-if="authStore.isAuthenticated()">
+        <RouterLink
+          to="/favorites"
+          class="text-blue-200 text-sm hover:text-white flex items-center gap-1"
+        >
+          <i class="ti ti-heart"></i> Favoris
+        </RouterLink>
         <span class="text-blue-200 text-sm">{{ authStore.user?.name }}</span>
         <button
           @click="handleLogout"

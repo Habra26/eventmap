@@ -9,14 +9,6 @@ const router = useRouter()
 const mapContainer = ref(null)
 let map = null
 let markers = []
-let skipNextMoveEnd = false
-
-function blockNextMoveEnd() {
-  skipNextMoveEnd = true
-  setTimeout(() => {
-    skipNextMoveEnd = false
-  }, 2000)
-}
 
 function clearMarkers() {
   markers.forEach((m) => m.remove())
@@ -42,17 +34,13 @@ function addMarkers() {
     markers.push(marker)
 
     marker.on('click', () => {
-      blockNextMoveEnd()
-      map.panTo([event.latitude, event.longitude])
+      map.flyTo([event.latitude, event.longitude], map.getZoom(), { animate: false })
       eventsStore.selectEvent(event.id)
     })
   })
 }
 
 function onMapMoveEnd() {
-  if (skipNextMoveEnd) {
-    return
-  }
   const bounds = map.getBounds()
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
   const params = { ...eventsStore.currentParams, bbox }
@@ -66,7 +54,8 @@ function initMap() {
     attribution: '© OpenStreetMap contributors',
   }).addTo(map)
 
-  map.on('moveend', onMapMoveEnd)
+  map.on('dragend', onMapMoveEnd)
+  map.on('zoomend', onMapMoveEnd)
 
   map.on('popupopen', () => {
     document.querySelectorAll('.leaflet-detail-link').forEach((el) => {
@@ -99,8 +88,7 @@ watch(
     if (!id || !map) return
     const event = eventsStore.events.find((e) => e.id === id)
     if (!event?.latitude || !event?.longitude) return
-    blockNextMoveEnd()
-    map.panTo([event.latitude, event.longitude])
+    map.flyTo([event.latitude, event.longitude], map.getZoom(), { animate: false })
     markers
       .find((m) => {
         const pos = m.getLatLng()
