@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useEventsStore } from '@/stores/events'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toasts'
 import { useRouter } from 'vue-router'
 
 const eventsStore = useEventsStore()
 const favoritesStore = useFavoritesStore()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 const router = useRouter()
 
 const props = defineProps({
@@ -24,10 +26,16 @@ async function toggleFavorite() {
     router.push({ name: 'login' })
     return
   }
-  if (isFav.value) {
-    await favoritesStore.removeFavorite(props.event.id)
-  } else {
-    await favoritesStore.addFavorite(props.event.id)
+  try {
+    if (isFav.value) {
+      await favoritesStore.removeFavorite(props.event.id)
+      toastStore.success('Retiré des favoris')
+    } else {
+      await favoritesStore.addFavorite(props.event.id)
+      toastStore.success('Ajouté aux favoris')
+    }
+  } catch (e) {
+    toastStore.error('Une erreur est survenue')
   }
 }
 </script>

@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useFavoritesStore } from '@/stores/favorites'
 import EventCard from '@/components/EventCard.vue'
+import Loader from '@/components/Loader.vue'
 
 const favoritesStore = useFavoritesStore()
 
@@ -14,10 +15,7 @@ onMounted(() => {
   <div class="max-w-4xl mx-auto px-6 py-8">
     <h1 class="text-2xl font-medium mb-6">Mes favoris</h1>
 
-    <div v-if="favoritesStore.loading" class="text-center text-gray-500 py-12">
-      <i class="ti ti-loader text-3xl animate-spin"></i>
-      <p class="mt-2">Chargement...</p>
-    </div>
+    <Loader v-if="favoritesStore.loading" message="Chargement..." />
 
     <div v-else-if="favoritesStore.favorites.length === 0" class="text-center text-gray-500 py-12">
       <i class="ti ti-heart text-3xl"></i>

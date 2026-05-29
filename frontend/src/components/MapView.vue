@@ -57,14 +57,13 @@ function initMap() {
   map.on('dragend', onMapMoveEnd)
   map.on('zoomend', onMapMoveEnd)
 
-  map.on('popupopen', () => {
-    document.querySelectorAll('.leaflet-detail-link').forEach((el) => {
-      el.addEventListener('click', (e) => {
-        e.preventDefault()
-        const id = el.getAttribute('data-event-id')
-        router.push(`/events/${id}`)
-      })
-    })
+  mapContainer.value.addEventListener('click', (e) => {
+    const link = e.target.closest('.leaflet-detail-link')
+    if (link) {
+      e.preventDefault()
+      const id = link.getAttribute('data-event-id')
+      router.push(`/events/${id}`)
+    }
   })
 }
 
