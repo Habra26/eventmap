@@ -2,20 +2,18 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toasts'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 
 const name = ref('')
 const email = ref('')
-const profileMessage = ref('')
-const profileError = ref('')
 
 const currentPassword = ref('')
 const password = ref('')
 const passwordConfirmation = ref('')
-const passwordMessage = ref('')
-const passwordError = ref('')
 
 onMounted(() => {
   name.value = authStore.user?.name ?? ''
@@ -23,29 +21,27 @@ onMounted(() => {
 })
 
 async function updateProfile() {
-  profileMessage.value = ''
-  profileError.value = ''
   try {
-    profileMessage.value = await authStore.updateProfile(name.value, email.value)
+    const message = await authStore.updateProfile(name.value, email.value)
+    toastStore.success(message)
   } catch (e) {
-    profileError.value = e.response?.data?.message ?? 'Erreur lors de la mise à jour'
+    toastStore.error(e.response?.data?.message ?? 'Erreur lors de la mise à jour')
   }
 }
 
 async function updatePassword() {
-  passwordMessage.value = ''
-  passwordError.value = ''
   try {
-    passwordMessage.value = await authStore.updatePassword(
+    const message = await authStore.updatePassword(
       currentPassword.value,
       password.value,
       passwordConfirmation.value,
     )
+    toastStore.success(message)
     currentPassword.value = ''
     password.value = ''
     passwordConfirmation.value = ''
   } catch (e) {
-    passwordError.value = e.response?.data?.message ?? 'Erreur lors du changement de mot de passe'
+    toastStore.error(e.response?.data?.message ?? 'Erreur lors du changement de mot de passe')
   }
 }
 
@@ -55,9 +51,10 @@ async function deleteAccount() {
   }
   try {
     await authStore.deleteAccount()
+    toastStore.success('Compte supprimé')
     router.push('/register')
   } catch (e) {
-    profileError.value = 'Erreur lors de la suppression du compte'
+    toastStore.error('Erreur lors de la suppression du compte')
   }
 }
 </script>
@@ -90,9 +87,6 @@ async function deleteAccount() {
       >
         Enregistrer
       </button>
-
-      <p v-if="profileMessage" class="text-green-600 text-sm mt-3">{{ profileMessage }}</p>
-      <p v-if="profileError" class="text-red-500 text-sm mt-3">{{ profileError }}</p>
     </section>
 
     <!-- Mot de passe -->
@@ -126,9 +120,6 @@ async function deleteAccount() {
       >
         Changer le mot de passe
       </button>
-
-      <p v-if="passwordMessage" class="text-green-600 text-sm mt-3">{{ passwordMessage }}</p>
-      <p v-if="passwordError" class="text-red-500 text-sm mt-3">{{ passwordError }}</p>
     </section>
 
     <!-- Suppression compte -->
