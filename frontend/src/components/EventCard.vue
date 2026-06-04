@@ -43,15 +43,15 @@ async function toggleFavorite() {
 <template>
   <div
     @click="eventsStore.selectEvent(event.id)"
-    class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer relative"
-    :class="eventsStore.selectedEventId === event.id ? 'ring-2 ring-blue-500' : ''"
+    class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer relative"
+    :class="eventsStore.selectedEventId === event.id ? 'ring-2 ring-brand-600' : ''"
   >
     <!-- Bouton favori -->
     <button
       @click.stop="toggleFavorite"
-      class="absolute top-2 right-2 z-10 bg-white rounded-full p-1.5 shadow hover:scale-110 transition-transform"
+      class="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur rounded-full p-2 shadow hover:scale-110 transition-transform"
     >
-      <i v-if="isFav" class="ti ti-heart text-xl text-red-500"></i>
+      <i v-if="isFav" class="ti ti-heart text-xl text-accent-500"></i>
       <i v-else class="ti ti-heart text-xl text-gray-400"></i>
     </button>
 
@@ -59,23 +59,23 @@ async function toggleFavorite() {
       v-if="event.image_url"
       :src="event.image_url"
       :alt="event.title"
-      class="w-full h-40 object-cover"
+      class="w-full h-44 object-cover"
     />
-    <div v-else class="w-full h-40 bg-blue-50 flex items-center justify-center">
-      <i class="ti ti-calendar-event text-4xl text-blue-300"></i>
+    <div v-else class="w-full h-44 bg-brand-50 flex items-center justify-center">
+      <i class="ti ti-calendar-event text-4xl text-brand-300"></i>
     </div>
 
     <div class="p-4">
-      <p class="font-medium text-gray-800 truncate">{{ event.title }}</p>
-      <p class="text-sm text-gray-500 mt-1 flex items-center gap-1">
-        <i class="ti ti-map-pin text-blue-600"></i> {{ event.city ?? 'Ville inconnue' }}
+      <p class="font-semibold text-gray-900 truncate">{{ event.title }}</p>
+      <p class="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
+        <i class="ti ti-map-pin text-brand-600"></i> {{ event.city ?? 'Ville inconnue' }}
       </p>
-      <p class="text-sm text-gray-500 mt-1 flex items-center gap-1">
-        <i class="ti ti-calendar text-blue-600"></i> {{ event.date ?? 'Date inconnue' }}
+      <p class="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
+        <i class="ti ti-calendar text-brand-600"></i> {{ event.date ?? 'Date inconnue' }}
       </p>
       <RouterLink
         :to="{ name: 'event', params: { id: event.id } }"
-        class="mt-3 inline-block text-sm text-blue-700 hover:underline"
+        class="mt-3 inline-block text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
       >
         Voir le détail →
       </RouterLink>

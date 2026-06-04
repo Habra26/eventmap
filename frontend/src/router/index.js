@@ -5,6 +5,7 @@ import EventsView from '@/views/EventsView.vue'
 import EventDetailView from '@/views/EventDetailView.vue'
 import FavoritesView from '@/views/FavoritesView.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import LegalView from '@/views/LegalView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,6 +41,11 @@ const router = createRouter({
       name: 'profile',
       component: ProfileView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/legal',
+      name: 'legal',
+      component: LegalView,
     },
   ],
 })

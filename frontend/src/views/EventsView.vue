@@ -26,14 +26,18 @@ function switchToMap() {
     <div class="flex lg:hidden border-b border-gray-200">
       <button
         @click="activeTab = 'list'"
-        :class="activeTab === 'list' ? 'border-b-2 border-blue-700 text-blue-700' : 'text-gray-500'"
+        :class="
+          activeTab === 'list' ? 'border-b-2 border-brand-900 text-brand-900' : 'text-gray-500'
+        "
         class="flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2"
       >
         <i class="ti ti-list"></i> Liste
       </button>
       <button
         @click="switchToMap"
-        :class="activeTab === 'map' ? 'border-b-2 border-blue-700 text-blue-700' : 'text-gray-500'"
+        :class="
+          activeTab === 'map' ? 'border-b-2 border-brand-900 text-brand-900' : 'text-gray-500'
+        "
         class="flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2"
       >
         <i class="ti ti-map"></i> Carte
@@ -46,7 +50,10 @@ function switchToMap() {
         :class="activeTab === 'list' ? 'flex' : 'hidden'"
         class="lg:flex w-full lg:w-1/2 flex-col overflow-y-auto px-6 py-6"
       >
-        <h1 class="text-2xl font-medium mb-6">Évènements à venir</h1>
+        <div class="mb-6">
+          <h1 class="text-3xl font-bold text-brand-900">Évènements à venir</h1>
+          <p class="text-sm text-gray-500 mt-1">Découvre ce qui se passe près de chez toi</p>
+        </div>
         <SearchBar class="mb-6" />
 
         <Loader v-if="eventsStore.loading" message="Chargement des évènements..." />
