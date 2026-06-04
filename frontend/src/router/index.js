@@ -14,49 +14,56 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterView,
+      meta: { title: "S'inscrire" },
     },
     {
       path: '/login',
       name: 'login',
       component: LoginView,
+      meta: { title: 'Se connecter' },
     },
     {
       path: '/',
       name: 'home',
       component: EventsView,
+      meta: { title: 'Évènements' },
     },
     {
       path: '/events/:id',
       name: 'event',
       component: EventDetailView,
+      meta: { title: 'Détail évènement' },
     },
     {
       path: '/favorites',
       name: 'favorites',
       component: FavoritesView,
-      meta: { requiresAuth: true },
+      meta: { title: 'Mes favoris', requiresAuth: true },
     },
     {
       path: '/profile',
       name: 'profile',
       component: ProfileView,
-      meta: { requiresAuth: true },
+      meta: { title: 'Mon profil', requiresAuth: true },
     },
     {
       path: '/legal',
       name: 'legal',
       component: LegalView,
+      meta: { title: 'Mentions légales' },
     },
   ],
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
-    next({ name: 'login' })
-  } else {
-    next()
+    return { name: 'login' }
   }
+})
+
+router.afterEach((to) => {
+  document.title = to.meta.title ? `${to.meta.title} · EventMap` : 'EventMap'
 })
 
 export default router
