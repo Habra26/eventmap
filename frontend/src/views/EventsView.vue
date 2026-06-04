@@ -26,14 +26,18 @@ function switchToMap() {
     <div class="flex lg:hidden border-b border-gray-200">
       <button
         @click="activeTab = 'list'"
-        :class="activeTab === 'list' ? 'border-b-2 border-blue-700 text-blue-700' : 'text-gray-500'"
+        :class="
+          activeTab === 'list' ? 'border-b-2 border-brand-900 text-brand-900' : 'text-gray-500'
+        "
         class="flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2"
       >
         <i class="ti ti-list"></i> Liste
       </button>
       <button
         @click="switchToMap"
-        :class="activeTab === 'map' ? 'border-b-2 border-blue-700 text-blue-700' : 'text-gray-500'"
+        :class="
+          activeTab === 'map' ? 'border-b-2 border-brand-900 text-brand-900' : 'text-gray-500'
+        "
         class="flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2"
       >
         <i class="ti ti-map"></i> Carte
