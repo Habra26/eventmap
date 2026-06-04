@@ -33,7 +33,7 @@ class FavoriteController extends Controller
 
         // Récupère l'évènement depuis Ticketmaster et le sauvegarde en DB
         $apiKey = config('services.ticketmaster.key');
-        $response = (app()->environment('local') ? Http::withoutVerifying() : Http::new())
+        $response = (app()->environment('local') ? Http::withoutVerifying() : Http::withOptions([]))
             ->get("https://app.ticketmaster.com/discovery/v2/events/{$eventId}.json", [
                 'apikey' => $apiKey,
             ]);
