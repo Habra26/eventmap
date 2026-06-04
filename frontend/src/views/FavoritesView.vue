@@ -13,13 +13,26 @@ onMounted(() => {
 
 <template>
   <div class="max-w-4xl mx-auto px-6 py-8">
-    <h1 class="text-2xl font-medium mb-6">Mes favoris</h1>
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-brand-900">Mes favoris</h1>
+      <p class="text-sm text-gray-500 mt-1">Retrouve les évènements que tu as sauvegardés</p>
+    </div>
 
     <Loader v-if="favoritesStore.loading" message="Chargement..." />
 
-    <div v-else-if="favoritesStore.favorites.length === 0" class="text-center text-gray-500 py-12">
-      <i class="ti ti-heart text-3xl"></i>
-      <p class="mt-2">Aucun favori pour l'instant</p>
+    <div
+      v-else-if="favoritesStore.favorites.length === 0"
+      class="text-center py-16 bg-brand-50 rounded-2xl"
+    >
+      <i class="ti ti-heart text-4xl text-brand-300"></i>
+      <p class="mt-3 text-gray-600 font-medium">Aucun favori pour l'instant</p>
+      <p class="text-sm text-gray-500 mt-1">Explore les évènements et ajoute tes préférés</p>
+      <RouterLink
+        to="/"
+        class="inline-block mt-4 bg-brand-900 text-white text-sm px-5 py-2.5 rounded-xl hover:bg-brand-800 transition-colors"
+      >
+        Découvrir les évènements
+      </RouterLink>
     </div>
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

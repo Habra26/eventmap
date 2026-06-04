@@ -61,76 +61,79 @@ async function deleteAccount() {
 
 <template>
   <div class="max-w-2xl mx-auto px-6 py-8">
-    <h1 class="text-2xl font-medium mb-8">Mon profil</h1>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-brand-900">Mon profil</h1>
+      <p class="text-sm text-gray-500 mt-1">Gère tes informations personnelles</p>
+    </div>
 
     <!-- Infos personnelles -->
-    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-      <h2 class="text-lg font-medium mb-4">Informations personnelles</h2>
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h2>
 
       <label class="block text-sm text-gray-600 mb-1">Nom</label>
       <input
         v-model="name"
         type="text"
-        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-blue-500"
+        class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
       />
 
       <label class="block text-sm text-gray-600 mb-1">Email</label>
       <input
         v-model="email"
         type="email"
-        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-blue-500"
+        class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
       />
 
       <button
         @click="updateProfile"
-        class="bg-blue-700 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
+        class="bg-brand-900 text-white text-sm px-5 py-2.5 rounded-xl hover:bg-brand-800 transition-colors"
       >
         Enregistrer
       </button>
     </section>
 
     <!-- Mot de passe -->
-    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-      <h2 class="text-lg font-medium mb-4">Changer le mot de passe</h2>
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Changer le mot de passe</h2>
 
       <label class="block text-sm text-gray-600 mb-1">Mot de passe actuel</label>
       <input
         v-model="currentPassword"
         type="password"
-        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-blue-500"
+        class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
       />
 
       <label class="block text-sm text-gray-600 mb-1">Nouveau mot de passe</label>
       <input
         v-model="password"
         type="password"
-        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-blue-500"
+        class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
       />
 
       <label class="block text-sm text-gray-600 mb-1">Confirmer le nouveau mot de passe</label>
       <input
         v-model="passwordConfirmation"
         type="password"
-        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-blue-500"
+        class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
       />
 
       <button
         @click="updatePassword"
-        class="bg-blue-700 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
+        class="bg-brand-900 text-white text-sm px-5 py-2.5 rounded-xl hover:bg-brand-800 transition-colors"
       >
         Changer le mot de passe
       </button>
     </section>
 
     <!-- Suppression compte -->
-    <section class="bg-white rounded-xl shadow-sm border border-red-100 p-6">
-      <h2 class="text-lg font-medium mb-2 text-red-600">Zone dangereuse</h2>
+    <section class="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
+      <h2 class="text-lg font-semibold mb-2 text-red-600">Zone dangereuse</h2>
       <p class="text-sm text-gray-500 mb-4">
         La suppression de ton compte est définitive et supprime tous tes favoris.
       </p>
       <button
         @click="deleteAccount"
-        class="bg-red-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+        class="bg-red-600 text-white text-sm px-5 py-2.5 rounded-xl hover:bg-red-700 transition-colors"
       >
         Supprimer mon compte
       </button>
