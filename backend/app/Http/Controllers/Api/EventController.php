@@ -10,7 +10,7 @@ class EventController extends Controller
 {
     private function httpClient()
     {
-        return app()->environment('local') ? Http::withoutVerifying() : Http::new();
+        return app()->environment('local') ? Http::withoutVerifying() : Http::withOptions([]);
     }
 
     public function index(Request $request)
