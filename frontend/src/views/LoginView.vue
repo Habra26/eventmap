@@ -6,15 +6,17 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
+// Objet réactif regroupant tous les champs du formulaire
 const form = ref({
   email: '',
   password: '',
 })
 
-const errors = ref({})
-const generalError = ref(null)
+const errors = ref({})       // Erreurs de validation champ par champ
+const generalError = ref(null) // Erreur globale (mauvais identifiants, erreur serveur)
 const loading = ref(false)
 
+// Validation côté client avant d'envoyer la requête — évite des appels inutiles au serveur
 function validate() {
   const e = {}
   if (!form.value.email) {
@@ -36,8 +38,10 @@ async function handleSubmit() {
   loading.value = true
   try {
     await authStore.login(form.value.email, form.value.password)
+    // Redirige vers la page principale après connexion réussie
     router.push('/')
   } catch (e) {
+    // Le backend renvoie un message explicite pour les mauvais identifiants (422)
     generalError.value = e.response?.data?.message ?? 'Une erreur est survenue'
   } finally {
     loading.value = false
@@ -46,7 +50,9 @@ async function handleSubmit() {
 </script>
 
 <template>
+  <!-- Mise en page deux colonnes : panneau de présentation (desktop) + formulaire -->
   <div class="min-h-screen flex">
+    <!-- Panneau gauche visible uniquement sur desktop (lg+) -->
     <div class="hidden lg:flex lg:w-1/2 bg-brand-900 flex-col justify-center items-center px-12">
       <i class="ti ti-map-pin text-5xl text-brand-100 mb-6"></i>
       <h1 class="text-3xl font-bold text-white mb-3">EventMap</h1>
@@ -69,6 +75,7 @@ async function handleSubmit() {
 
     <div class="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
       <div class="w-full max-w-sm">
+        <!-- Logo mobile affiché uniquement quand le panneau gauche est caché -->
         <div class="lg:hidden mb-6 text-center flex flex-col items-center">
           <i class="ti ti-map-pin text-3xl text-brand-900 mb-2 block"></i>
           <h1 class="text-xl font-bold text-brand-900">EventMap</h1>
@@ -77,6 +84,7 @@ async function handleSubmit() {
         <h2 class="text-2xl font-bold text-brand-900 mb-1">Se connecter</h2>
         <p class="text-sm text-gray-500 mb-6">Accède à tes évènements favoris</p>
 
+        <!-- novalidate désactive la validation HTML native pour utiliser notre propre logique -->
         <form @submit.prevent="handleSubmit" novalidate>
           <div class="mb-4">
             <label class="block text-sm text-gray-600 mb-1" for="email">Email</label>
@@ -106,6 +114,7 @@ async function handleSubmit() {
             <p v-if="errors.password" class="text-accent-600 text-xs mt-1">{{ errors.password }}</p>
           </div>
 
+          <!-- Erreur générale (ex. mauvais identifiants) affichée sous les champs -->
           <p v-if="generalError" class="text-accent-600 text-sm mb-4">{{ generalError }}</p>
 
           <button

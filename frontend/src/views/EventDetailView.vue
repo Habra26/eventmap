@@ -18,10 +18,13 @@ const event = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
+// computed : se recalcule automatiquement quand event ou favorites changent
+// event.value.id correspond au ticketmaster_id côté API (l'id externe, pas l'id DB)
 const isFav = computed(() => (event.value ? favoritesStore.isFavorite(event.value.id) : false))
 
 onMounted(async () => {
   try {
+    // route.params.id est le segment dynamique :id de l'URL /events/:id
     const response = await api.get(`/events/${route.params.id}`)
     event.value = response.data
   } catch (e) {
@@ -32,6 +35,7 @@ onMounted(async () => {
 })
 
 async function toggleFavorite() {
+  // Redirige vers la connexion si l'utilisateur n'est pas authentifié
   if (!authStore.isAuthenticated()) {
     router.push({ name: 'login' })
     return
@@ -71,10 +75,12 @@ async function toggleFavorite() {
           :alt="event.title"
           class="w-full h-72 object-cover rounded-2xl mb-6"
         />
+        <!-- Placeholder si aucune image n'est fournie par Ticketmaster -->
         <div v-else class="w-full h-72 bg-brand-50 rounded-2xl mb-6 flex items-center justify-center">
           <i class="ti ti-calendar-event text-5xl text-brand-300"></i>
         </div>
 
+        <!-- Bouton favori positionné en absolu sur l'image -->
         <button
           @click="toggleFavorite"
           class="absolute top-4 right-4 bg-white/90 backdrop-blur rounded-full p-3 shadow hover:scale-110 transition-transform"
@@ -93,6 +99,7 @@ async function toggleFavorite() {
 
       <h1 class="text-3xl font-bold text-brand-900 mb-4">{{ event.title }}</h1>
 
+      <!-- Grille d'informations : date, heure, ville, salle -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div class="flex items-center gap-2 text-gray-600">
           <i class="ti ti-calendar text-brand-600"></i>
@@ -116,6 +123,7 @@ async function toggleFavorite() {
         {{ event.description ?? 'Aucune description disponible' }}
       </p>
 
+      <!-- Lien vers le site de billetterie Ticketmaster — s'ouvre dans un nouvel onglet -->
       <a
         v-if="event.ticket_url"
         :href="event.ticket_url"

@@ -5,10 +5,10 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const menuOpen = ref(false)
+const menuOpen = ref(false) // Contrôle l'ouverture du menu burger sur mobile
 
 async function handleLogout() {
-  menuOpen.value = false
+  menuOpen.value = false // Ferme le menu mobile avant de déconnecter
   await authStore.logout()
   router.push('/login')
 }
@@ -29,7 +29,7 @@ function closeMenu() {
         <i class="ti ti-map-pin"></i> EventMap
       </RouterLink>
 
-      <!-- Menu desktop -->
+      <!-- Menu desktop : liens conditionnels selon l'état d'authentification -->
       <div class="hidden sm:flex items-center gap-6">
         <template v-if="authStore.isAuthenticated()">
           <RouterLink
@@ -42,6 +42,7 @@ function closeMenu() {
             to="/profile"
             class="text-gray-600 text-sm hover:text-brand-900 transition-colors flex items-center gap-1"
           >
+            <!-- Affiche le prénom de l'utilisateur connecté comme lien vers le profil -->
             <i class="ti ti-user"></i> {{ authStore.user?.name }}
           </RouterLink>
           <button
@@ -67,12 +68,13 @@ function closeMenu() {
         </template>
       </div>
 
-      <!-- Bouton burger mobile -->
+      <!-- Bouton burger : visible uniquement sur mobile -->
       <button
         @click="menuOpen = !menuOpen"
         class="sm:hidden text-gray-700 text-2xl"
         aria-label="Menu"
       >
+        <!-- Icône change selon l'état du menu -->
         <i :class="menuOpen ? 'ti ti-x' : 'ti ti-menu-2'"></i>
       </button>
     </div>

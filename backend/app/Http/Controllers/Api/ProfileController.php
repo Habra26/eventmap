@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
+// Gère la lecture et la modification du profil de l'utilisateur connecté
 class ProfileController extends Controller
 {
+    // Retourne les données de l'utilisateur authentifié (les champs cachés comme 'password' sont exclus)
     public function show(Request $request)
     {
         return $request->user();
@@ -25,6 +27,7 @@ class ProfileController extends Controller
                 'string',
                 'email',
                 'max:255',
+                // unique:users sauf pour l'utilisateur lui-même, sinon il ne pourrait pas conserver son e-mail
                 Rule::unique('users')->ignore($user->id),
             ],
         ]);
@@ -46,6 +49,7 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
+        // Vérifie que l'utilisateur connaît son mot de passe actuel avant d'autoriser le changement
         if (!Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'message' => 'Le mot de passe actuel est incorrect',
@@ -63,6 +67,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        // On supprime d'abord tous les tokens Sanctum pour invalider les sessions actives
         $user->tokens()->delete();
         $user->delete();
 

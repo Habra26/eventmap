@@ -8,6 +8,8 @@ import Loader from '@/components/Loader.vue'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 
 const eventsStore = useEventsStore()
+
+// Onglet actif sur mobile ('list' ou 'map') — sur desktop les deux panneaux sont visibles côte à côte
 const activeTab = ref('list')
 
 onMounted(() => {
@@ -16,13 +18,17 @@ onMounted(() => {
 
 function switchToMap() {
   activeTab.value = 'map'
+  // nextTick attend que Vue ait rendu le panneau carte dans le DOM
+  // dispatchEvent('resize') force Leaflet à recalculer ses dimensions (sinon la carte s'affiche mal)
   nextTick(() => window.dispatchEvent(new Event('resize')))
 }
 </script>
 
 <template>
+  <!-- h-[calc(100vh-64px)] : occupe toute la hauteur de l'écran moins la navbar (64px) -->
   <div class="flex flex-col h-[calc(100vh-64px)]">
-    <!-- Onglets mobile -->
+
+    <!-- Onglets de navigation Liste / Carte (visibles uniquement sur mobile < lg) -->
     <div class="flex lg:hidden border-b border-gray-200">
       <button
         @click="activeTab = 'list'"
@@ -45,7 +51,8 @@ function switchToMap() {
     </div>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- Liste -->
+
+      <!-- Panneau liste : visible sur desktop (lg:flex), affiché selon l'onglet actif sur mobile -->
       <div
         :class="activeTab === 'list' ? 'flex' : 'hidden'"
         class="lg:flex w-full lg:w-1/2 flex-col overflow-y-auto px-6 py-6"
@@ -56,6 +63,7 @@ function switchToMap() {
         </div>
         <SearchBar class="mb-6" />
 
+        <!-- États mutuellement exclusifs : chargement → erreur → vide → résultats -->
         <Loader v-if="eventsStore.loading" message="Chargement des évènements..." />
 
         <ErrorMessage v-else-if="eventsStore.error" :message="eventsStore.error" />
@@ -70,7 +78,7 @@ function switchToMap() {
         </div>
       </div>
 
-      <!-- Carte -->
+      <!-- Panneau carte : sticky pour rester en vue lors du scroll de la liste sur desktop -->
       <div
         :class="activeTab === 'map' ? 'flex' : 'hidden'"
         class="lg:flex w-full lg:w-1/2 h-full sticky top-0"

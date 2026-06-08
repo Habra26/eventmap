@@ -6,6 +6,7 @@ import Loader from '@/components/Loader.vue'
 
 const favoritesStore = useFavoritesStore()
 
+// Recharge les favoris à chaque visite de la page pour être sûr d'avoir les données à jour
 onMounted(() => {
   favoritesStore.fetchFavorites()
 })
@@ -20,6 +21,7 @@ onMounted(() => {
 
     <Loader v-if="favoritesStore.loading" message="Chargement..." />
 
+    <!-- État vide : encourage l'utilisateur à explorer les événements -->
     <div
       v-else-if="favoritesStore.favorites.length === 0"
       class="text-center py-16 bg-brand-50 rounded-2xl"
@@ -39,6 +41,7 @@ onMounted(() => {
       <EventCard
         v-for="event in favoritesStore.favorites"
         :key="event.id"
+        <!-- On remplace l'id interne DB par le ticketmaster_id car EventCard et le router attendent l'id Ticketmaster -->
         :event="{ ...event, id: event.ticketmaster_id }"
       />
     </div>

@@ -19,9 +19,11 @@ const props = defineProps({
   },
 })
 
+// computed : se recalcule automatiquement quand la liste des favoris est modifiée
 const isFav = computed(() => favoritesStore.isFavorite(props.event.id))
 
 async function toggleFavorite() {
+  // Redirige vers la connexion si l'utilisateur n'est pas authentifié
   if (!authStore.isAuthenticated()) {
     router.push({ name: 'login' })
     return
@@ -41,12 +43,13 @@ async function toggleFavorite() {
 </script>
 
 <template>
+  <!-- Clic sur la carte → sélectionne l'événement dans le store pour centrer la carte Leaflet -->
   <div
     @click="eventsStore.selectEvent(event.id)"
     class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all cursor-pointer relative"
     :class="eventsStore.selectedEventId === event.id ? 'ring-2 ring-brand-600' : ''"
   >
-    <!-- Bouton favori -->
+    <!-- Bouton favori : @click.stop empêche la propagation vers le clic de la carte parente -->
     <button
       @click.stop="toggleFavorite"
       class="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur rounded-full p-2 shadow hover:scale-110 transition-transform"
@@ -61,6 +64,7 @@ async function toggleFavorite() {
       :alt="event.title"
       class="w-full h-44 object-cover"
     />
+    <!-- Placeholder si l'événement n'a pas d'image -->
     <div v-else class="w-full h-44 bg-brand-50 flex items-center justify-center">
       <i class="ti ti-calendar-event text-4xl text-brand-300"></i>
     </div>

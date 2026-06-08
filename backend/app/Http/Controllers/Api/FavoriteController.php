@@ -8,12 +8,17 @@ use App\Models\Favorite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
+// Gère les favoris de l'utilisateur connecté
+// Les événements Ticketmaster sont sauvegardés en DB au moment de l'ajout en favori
 class FavoriteController extends Controller
 {
+    // Retourne la liste des événements mis en favori par l'utilisateur
     public function index(Request $request)
     {
+        // eager load 'event' pour éviter N+1 requêtes SQL (une seule requête au lieu d'une par favori)
         $favorites = $request->user()->favorites()->with('event')->get();
 
+        // On aplatit pour n'exposer que les données de l'événement, pas la table pivot
         return response()->json($favorites->map(fn($f) => $f->event));
     }
 
@@ -23,6 +28,7 @@ class FavoriteController extends Controller
 
         $eventId = $request->event_id;
 
+        // Vérifie d'abord si le favori existe déjà pour renvoyer 409 plutôt qu'une erreur SQL
         $already = Favorite::where('user_id', $request->user()->id)
             ->where('event_id', $eventId)
             ->exists();
@@ -44,6 +50,8 @@ class FavoriteController extends Controller
 
         $data = $response->json();
 
+        // updateOrCreate évite les doublons si l'événement a déjà été mis en favori par un autre utilisateur
+        // La clé de recherche est le ticketmaster_id (identifiant externe stable)
         $event = Event::updateOrCreate(
             ['ticketmaster_id' => $eventId],
             [
@@ -60,7 +68,7 @@ class FavoriteController extends Controller
 
         Favorite::create([
             'user_id' => $request->user()->id,
-            'event_id' => $event->id,
+            'event_id' => $event->id, // id interne DB, pas le ticketmaster_id
         ]);
 
         return response()->json(['message' => 'Ajouté aux favoris'], 201);
@@ -68,6 +76,7 @@ class FavoriteController extends Controller
 
     public function destroy(Request $request, string $eventId)
     {
+        // On recherche par ticketmaster_id car le frontend n'a pas accès à l'id interne DB
         $event = Event::where('ticketmaster_id', $eventId)->first();
 
         if (!$event) {

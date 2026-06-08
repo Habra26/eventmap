@@ -11,9 +11,12 @@ import 'leaflet/dist/leaflet.css'
 const app = createApp(App)
 const pinia = createPinia()
 
+// Pinia doit être installé avant le router car les guards de navigation utilisent les stores
 app.use(pinia)
 app.use(router)
 
+// Si un token est déjà présent, on rafraîchit les données utilisateur au démarrage
+// Cela permet de détecter un compte supprimé ou un token révoqué sans attendre la prochaine action
 const authStore = useAuthStore()
 if (authStore.token) {
   authStore.fetchUser()

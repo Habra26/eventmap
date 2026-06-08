@@ -7,6 +7,8 @@ import FavoritesView from '@/views/FavoritesView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import LegalView from '@/views/LegalView.vue'
 
+// createWebHistory utilise l'API History du navigateur (URLs propres)
+// Nécessite que le serveur renvoie index.html pour toutes les routes (configuré sur Vercel)
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -55,6 +57,8 @@ const router = createRouter({
   ],
 })
 
+// Garde de navigation : redirige vers /login si la route exige une auth et qu'aucun token n'est présent
+// On lit le token depuis localStorage plutôt que le store pour éviter les problèmes d'initialisation de Pinia
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
@@ -62,6 +66,7 @@ router.beforeEach((to) => {
   }
 })
 
+// Met à jour le <title> de la page après chaque navigation
 router.afterEach((to) => {
   document.title = to.meta.title ? `${to.meta.title} · EventMap` : 'EventMap'
 })

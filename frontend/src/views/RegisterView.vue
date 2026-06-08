@@ -10,13 +10,14 @@ const form = ref({
   name: '',
   email: '',
   password: '',
-  password_confirmation: '',
+  password_confirmation: '', // Nom exact attendu par la règle 'confirmed' de Laravel
 })
 
-const errors = ref({})
+const errors = ref({})        // Erreurs de validation champ par champ
 const generalError = ref(null)
 const loading = ref(false)
 
+// Validation côté client — les mêmes règles que le backend pour un retour immédiat à l'utilisateur
 function validate() {
   const e = {}
   if (!form.value.name) e.name = 'Le nom est requis'
@@ -52,6 +53,7 @@ async function handleSubmit() {
     router.push('/')
   } catch (e) {
     if (e.response?.status === 422) {
+      // Le backend renvoie des erreurs par champ sous errors.{champ}[0] — on prend le premier message
       const backend = e.response.data.errors
       errors.value = Object.fromEntries(Object.entries(backend).map(([key, val]) => [key, val[0]]))
     } else {
@@ -65,6 +67,7 @@ async function handleSubmit() {
 
 <template>
   <div class="min-h-screen flex">
+    <!-- Panneau de présentation — identique à LoginView pour cohérence visuelle -->
     <div class="hidden lg:flex lg:w-1/2 bg-brand-900 flex-col justify-center items-center px-12">
       <i class="ti ti-map-pin text-5xl text-brand-100 mb-6"></i>
       <h1 class="text-3xl font-bold text-white mb-3">EventMap</h1>
@@ -87,6 +90,7 @@ async function handleSubmit() {
 
     <div class="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
       <div class="w-full max-w-sm">
+        <!-- Logo mobile uniquement -->
         <div class="lg:hidden mb-6 text-center flex flex-col items-center">
           <i class="ti ti-map-pin text-3xl text-brand-900 mb-2 block"></i>
           <h1 class="text-xl font-bold text-brand-900">EventMap</h1>
@@ -95,6 +99,7 @@ async function handleSubmit() {
         <h2 class="text-2xl font-bold text-brand-900 mb-1">Créer un compte</h2>
         <p class="text-sm text-gray-500 mb-6">Rejoins EventMap gratuitement</p>
 
+        <!-- novalidate désactive la validation HTML native — on gère tout en JS -->
         <form @submit.prevent="handleSubmit" novalidate>
           <div class="mb-4">
             <label class="block text-sm text-gray-600 mb-1" for="name">Nom</label>

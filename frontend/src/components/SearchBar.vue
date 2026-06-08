@@ -4,13 +4,16 @@ import { useEventsStore } from '@/stores/events'
 
 const eventsStore = useEventsStore()
 
+// Un ref par filtre 
 const keyword = ref('')
 const city = ref('')
 const category = ref('')
 const startDate = ref('')
 const endDate = ref('')
-const showFilters = ref(false)
+const showFilters = ref(false) // Contrôle l'affichage du panneau de filtres avancés
 
+// Construit l'objet de paramètres en n'incluant que les valeurs renseignées
+// Les clés absentes ne seront pas envoyées dans la query string
 function buildParams() {
   const params = {}
   if (keyword.value) params.keyword = keyword.value
@@ -25,6 +28,7 @@ function handleSearch() {
   eventsStore.fetchEvents(buildParams())
 }
 
+// Réinitialise tous les filtres et recharge les événements par défaut
 function handleClear() {
   keyword.value = ''
   city.value = ''
@@ -34,13 +38,14 @@ function handleClear() {
   eventsStore.fetchEvents()
 }
 
+// Détermine si au moins un filtre est actif, affiche le bouton "Réinitialiser" si vrai
 const hasFilters = () =>
   keyword.value || city.value || category.value || startDate.value || endDate.value
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
-    <!-- Barre principale -->
+    <!-- Barre de recherche principale -->
     <div class="flex gap-2">
       <div class="relative flex-1">
         <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -60,7 +65,7 @@ const hasFilters = () =>
       </button>
     </div>
 
-    <!-- Toggle filtres -->
+    <!-- Ligne de contrôle des filtres avancés -->
     <div class="flex items-center justify-between">
       <button
         @click="showFilters = !showFilters"
@@ -69,6 +74,7 @@ const hasFilters = () =>
         <i class="ti ti-adjustments-horizontal"></i> Filtres
         <i :class="showFilters ? 'ti ti-chevron-up' : 'ti ti-chevron-down'"></i>
       </button>
+      <!-- Bouton visible seulement si un filtre est actif -->
       <button
         v-if="hasFilters()"
         @click="handleClear"
@@ -78,7 +84,7 @@ const hasFilters = () =>
       </button>
     </div>
 
-    <!-- Filtres dépliables -->
+    <!-- Filtres avancés -->
     <div v-if="showFilters" class="flex flex-col gap-2 pt-1">
       <div class="relative">
         <i class="ti ti-map-pin absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -90,6 +96,7 @@ const hasFilters = () =>
           @keyup.enter="handleSearch"
         />
       </div>
+      <!-- Les valeurs correspondent aux classificationName de l'API Ticketmaster -->
       <select
         v-model="category"
         class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
@@ -102,6 +109,7 @@ const hasFilters = () =>
         <option value="Film">Cinéma</option>
         <option value="Miscellaneous">Autre</option>
       </select>
+      <!-- Les deux champs date définissent la plage startDate/endDate envoyée au backend -->
       <div class="flex gap-2">
         <input
           v-model="startDate"

@@ -8,6 +8,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const toastStore = useToastStore()
 
+// États séparés pour chaque section du formulaire afin d'isoler les chargements et erreurs
 const name = ref('')
 const email = ref('')
 const profileErrors = ref({})
@@ -21,11 +22,13 @@ const passwordLoading = ref(false)
 
 const deleteLoading = ref(false)
 
+// Pré-remplit le formulaire avec les données actuelles de l'utilisateur depuis le store
 onMounted(() => {
   name.value = authStore.user?.name ?? ''
   email.value = authStore.user?.email ?? ''
 })
 
+// Valide les champs du profil côté client avant envoi
 function validateProfile() {
   const e = {}
   if (!name.value) e.name = 'Le nom est requis'
@@ -38,6 +41,7 @@ function validateProfile() {
   return Object.keys(e).length === 0
 }
 
+// Valide le formulaire de changement de mot de passe
 function validatePassword() {
   const e = {}
   if (!currentPassword.value) e.currentPassword = 'Le mot de passe actuel est requis'
@@ -60,6 +64,7 @@ async function updateProfile() {
     const message = await authStore.updateProfile(name.value, email.value)
     toastStore.success(message)
   } catch (e) {
+    // e.response?.data?.message contient le message d'erreur du backend (ex. email déjà pris)
     toastStore.error(e.response?.data?.message ?? 'Erreur lors de la mise à jour')
   } finally {
     profileLoading.value = false
@@ -76,6 +81,7 @@ async function updatePassword() {
       passwordConfirmation.value,
     )
     toastStore.success(message)
+    // Réinitialise les champs après succès pour éviter de laisser les mots de passe en mémoire
     currentPassword.value = ''
     password.value = ''
     passwordConfirmation.value = ''
@@ -88,6 +94,7 @@ async function updatePassword() {
 }
 
 async function deleteAccount() {
+  // Confirmation native du navigateur avant une action irréversible
   if (!confirm('Es-tu sûr de vouloir supprimer ton compte ? Cette action est irréversible.')) {
     return
   }
@@ -95,6 +102,7 @@ async function deleteAccount() {
   try {
     await authStore.deleteAccount()
     toastStore.success('Compte supprimé')
+    // Redirige vers l'inscription car l'utilisateur n'a plus de compte
     router.push('/register')
   } catch (e) {
     toastStore.error('Erreur lors de la suppression du compte')
@@ -111,7 +119,7 @@ async function deleteAccount() {
       <p class="text-sm text-gray-500 mt-1">Gère tes informations personnelles</p>
     </div>
 
-    <!-- Infos personnelles -->
+    <!-- Section : informations personnelles -->
     <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h2>
 
@@ -149,7 +157,7 @@ async function deleteAccount() {
       </button>
     </section>
 
-    <!-- Mot de passe -->
+    <!-- Section : changement de mot de passe -->
     <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Changer le mot de passe</h2>
 
@@ -209,7 +217,7 @@ async function deleteAccount() {
       </button>
     </section>
 
-    <!-- Suppression compte -->
+    <!-- Section : zone dangereuse — bordure rouge pour signaler le risque -->
     <section class="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
       <h2 class="text-lg font-semibold mb-2 text-red-600">Zone dangereuse</h2>
       <p class="text-sm text-gray-500 mb-4">
