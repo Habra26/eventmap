@@ -24,7 +24,9 @@ class FavoriteController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['event_id' => 'required|string']);
+        $request->validate([
+            'event_id' => ['required', 'string', 'regex:/^[A-Za-z0-9]+$/'],
+        ]);
 
         $eventId = $request->event_id;
 

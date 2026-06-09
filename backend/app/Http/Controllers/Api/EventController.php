@@ -46,11 +46,10 @@ class EventController extends Controller
             $params['endDateTime'] = $request->endDate . 'T23:59:59Z';
         }
 
-        if ($request->has('bbox')) {
-            // bbox = "south,west,north,east" — on calcule le centre géographique pour l'API geoPoint
-            [$south, $west, $north, $east] = explode(',', $request->bbox);
+        if ($request->filled('bbox')) {
+            [$south, $west, $north, $east] = array_map('floatval', explode(',', $request->bbox));
             $params['geoPoint'] = round(($south + $north) / 2, 6) . ',' . round(($west + $east) / 2, 6);
-            $params['radius'] = 50;
+            $params['radius'] = (int) max(ceil(max($north - $south, $east - $west) / 2 * 111), 1);
             $params['unit'] = 'km';
         } elseif (!$request->filled('keyword') && !$request->filled('city')) {
             // Sans filtre géographique ni texte, on restreint à la Belgique par défaut

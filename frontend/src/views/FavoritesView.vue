@@ -41,7 +41,6 @@ onMounted(() => {
       <EventCard
         v-for="event in favoritesStore.favorites"
         :key="event.id"
-        <!-- On remplace l'id interne DB par le ticketmaster_id car EventCard et le router attendent l'id Ticketmaster -->
         :event="{ ...event, id: event.ticketmaster_id }"
       />
     </div>

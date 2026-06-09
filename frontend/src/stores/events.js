@@ -6,6 +6,7 @@ export const useEventsStore = defineStore('events', () => {
   const events = ref([])
   const loading = ref(false)
   const error = ref(null)
+  const currentParams = ref({})
 
   // ID de l'événement sélectionné dans la liste — utilisé pour synchroniser la carte
   // Quand l'utilisateur clique sur une carte, la carte centre et ouvre le popup correspondant
@@ -18,6 +19,8 @@ export const useEventsStore = defineStore('events', () => {
   // Charge les événements depuis le backend avec des filtres optionnels (keyword, city, bbox, etc.)
   // params est un objet clé/valeur transmis directement en query string
   async function fetchEvents(params = {}) {
+    const {bbox, ...searchParams} = params
+    currentParams.value = searchParams
     loading.value = true
     error.value = null
     try {
@@ -31,5 +34,5 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
-  return { events, loading, error, fetchEvents, selectedEventId, selectEvent }
+  return { events, loading, error, currentParams, fetchEvents, selectedEventId, selectEvent }
 })
