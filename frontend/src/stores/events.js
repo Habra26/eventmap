@@ -7,6 +7,7 @@ export const useEventsStore = defineStore('events', () => {
   const loading = ref(false)
   const error = ref(null)
   const selectedEventId = ref(null)
+  const lastSearchParams = ref({}) 
 
   function selectEvent(id) {
     selectedEventId.value = id
@@ -15,6 +16,7 @@ export const useEventsStore = defineStore('events', () => {
   async function fetchEvents(params = {}) {
     loading.value = true
     error.value = null
+    lastSearchParams.value = { ...params }
     try {
       const response = await api.get('/events', { params })
       events.value = response.data
@@ -25,5 +27,5 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
-  return { events, loading, error, fetchEvents, selectedEventId, selectEvent }
+  return { events, loading, error, fetchEvents, selectedEventId, selectEvent, lastSearchParams }
 })
