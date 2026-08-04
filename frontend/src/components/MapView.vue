@@ -54,7 +54,7 @@ function addMarkers() {
 function onMapMoveEnd() {
   const bounds = map.getBounds()
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
-  const params = { ...eventsStore.currentParams, bbox }
+  const params = { ...eventsStore.lastSearchParams, bbox }
   eventsStore.fetchEvents(params)
 }
 
