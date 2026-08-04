@@ -95,14 +95,6 @@ async function toggleFavorite() {
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div class="flex items-center gap-2 text-gray-600">
-          <i class="ti ti-calendar text-brand-600"></i>
-          <span>{{ event.date ?? 'Date inconnue' }}</span>
-        </div>
-        <div class="flex items-center gap-2 text-gray-600">
-          <i class="ti ti-clock text-brand-600"></i>
-          <span>{{ event.time ?? 'Heure inconnue' }}</span>
-        </div>
-        <div class="flex items-center gap-2 text-gray-600">
           <i class="ti ti-map-pin text-brand-600"></i>
           <span>{{ event.city ?? 'Ville inconnue' }}</span>
         </div>
@@ -116,14 +108,24 @@ async function toggleFavorite() {
         {{ event.description ?? 'Aucune description disponible' }}
       </p>
 
-      <a
-        v-if="event.ticket_url"
-        :href="event.ticket_url"
-        target="_blank"
-        class="inline-flex items-center gap-2 bg-brand-900 text-white px-6 py-3 rounded-xl hover:bg-brand-800 transition-colors"
-      >
-        <i class="ti ti-ticket"></i> Acheter des billets
-      </a>
+      <div v-if="event.sub_events?.length" class="space-y-2 mb-6">
+        <h2 class="text-lg font-semibold text-brand-900 mb-2">Tickets disponibles</h2>
+        <a
+          v-for="sub in event.sub_events"
+          :key="sub.id"
+          :href="sub.ticket_url"
+          target="_blank"
+          class="flex items-center justify-between bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl px-4 py-3"
+        >
+          <div>
+            <p class="font-medium text-gray-900">{{ sub.name }}</p>
+            <p class="text-sm text-gray-500">
+              {{ sub.date ?? 'Date inconnue' }}<span v-if="sub.time"> à {{ sub.time }}</span>
+            </p>
+          </div>
+          <i class="ti ti-ticket text-brand-700 text-xl"></i>
+        </a>
+      </div>
 
       <p class="text-xs text-gray-400 mt-6">
         Données fournies par Ticketmaster
