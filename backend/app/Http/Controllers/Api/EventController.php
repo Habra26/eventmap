@@ -56,20 +56,37 @@ class EventController extends Controller
         }
 
         $events = collect($response->json('_embedded.events') ?? [])
-            ->map(function ($event) {
-                $venue = $event['_embedded']['venues'][0] ?? [];
+            ->groupBy(function ($event) {
+                $attractionId = $event['_embedded']['attractions'][0]['id'] ?? $event['id'];
+                $venueId = $event['_embedded']['venues'][0]['id'] ?? 'no-venue';
+                return $attractionId . '|' . $venueId;
+            })
+            ->map(function ($group) {
+                $first = $group->first();
+                $venue = $first['_embedded']['venues'][0] ?? [];
                 [$lat, $lng] = $this->getCoordinates($venue);
 
+                $attractionId = $first['_embedded']['attractions'][0]['id'] ?? $first['id'];
+                $venueId = $venue['id'] ?? 'no-venue';
+
                 return [
-                    'id' => $event['id'],
-                    'title' => $event['name'],
-                    'date' => $event['dates']['start']['localDate'] ?? null,
+                    'id' => $attractionId . '|' . $venueId,
+                    'title' => trim(explode('|', $first['name'])[0]),
+                    'date' => $first['dates']['start']['localDate'] ?? null,
                     'city' => $venue['city']['name'] ?? null,
                     'latitude' => $lat,
                     'longitude' => $lng,
-                    'image_url' => $event['images'][0]['url'] ?? null,
-                    'ticket_url' => $event['url'] ?? null,
-                    'category' => $event['classifications'][0]['segment']['name'] ?? null,
+                    'image_url' => $first['images'][0]['url'] ?? null,
+                    'ticket_url' => $first['url'] ?? null,
+                    'category' => $first['classifications'][0]['segment']['name'] ?? null,
+                    'sub_events' => $group->map(function ($e) {
+                        return [
+                            'id' => $e['id'],
+                            'name' => $e['name'],
+                            'date' => $e['dates']['start']['localDate'] ?? null,
+                            'ticket_url' => $e['url'] ?? null,
+                        ];
+                    })->values(),
                 ];
             })
             ->sortBy('date')
@@ -80,29 +97,58 @@ class EventController extends Controller
 
     public function show(string $id)
     {
-        $response = $this->httpClient()->get("https://app.ticketmaster.com/discovery/v2/events/{$id}.json", [
+        [$attractionId, $venueId] = array_pad(explode('|', $id, 2), 2, null);
+
+        $response = $this->httpClient()->get('https://app.ticketmaster.com/discovery/v2/events.json', [
             'apikey' => config('services.ticketmaster.key'),
+            'attractionId' => $attractionId,
+            'size' => 100,
         ]);
 
-        if ($response->failed()) {
-            return response()->json(['error' => 'Évènement introuvable'], 404);
+        $events = collect($response->json('_embedded.events') ?? []);
+
+        // Ne garder que les events du même lieu (venueId)
+        if ($venueId && $venueId !== 'no-venue') {
+            $events = $events->filter(function ($e) use ($venueId) {
+                return ($e['_embedded']['venues'][0]['id'] ?? null) === $venueId;
+            })->values();
         }
 
-        $event = $response->json();
+        // Fallback : pas un id d'attraction connu, ou rien trouvé après filtrage
+        if ($events->isEmpty()) {
+            $single = $this->httpClient()->get("https://app.ticketmaster.com/discovery/v2/events/{$attractionId}.json", [
+                'apikey' => config('services.ticketmaster.key'),
+            ]);
+
+            if ($single->failed()) {
+                return response()->json(['error' => 'Évènement introuvable'], 404);
+            }
+
+            $events = collect([$single->json()]);
+        }
+
+        $first = $events->first();
+        $venue = $first['_embedded']['venues'][0] ?? [];
 
         return response()->json([
-            'id' => $event['id'],
-            'title' => $event['name'],
-            'date' => $event['dates']['start']['localDate'] ?? null,
-            'time' => $event['dates']['start']['localTime'] ?? null,
-            'city' => $event['_embedded']['venues'][0]['city']['name'] ?? null,
-            'venue' => $event['_embedded']['venues'][0]['name'] ?? null,
-            'latitude' => $event['_embedded']['venues'][0]['location']['latitude'] ?? null,
-            'longitude' => $event['_embedded']['venues'][0]['location']['longitude'] ?? null,
-            'image_url' => $event['images'][0]['url'] ?? null,
-            'ticket_url' => $event['url'] ?? null,
-            'category' => $event['classifications'][0]['segment']['name'] ?? null,
-            'description' => $event['info'] ?? $event['pleaseNote'] ?? null,
+            'id' => $id,
+            'title' => trim(explode('|', $first['name'])[0]),
+            'city' => $venue['city']['name'] ?? null,
+            'venue' => $venue['name'] ?? null,
+            'latitude' => $venue['location']['latitude'] ?? null,
+            'longitude' => $venue['location']['longitude'] ?? null,
+            'image_url' => $first['images'][0]['url'] ?? null,
+            'category' => $first['classifications'][0]['segment']['name'] ?? null,
+            'description' => $first['info'] ?? $first['pleaseNote'] ?? null,
+            'sub_events' => $events->map(function ($e) {
+                return [
+                    'id' => $e['id'],
+                    'name' => $e['name'],
+                    'date' => $e['dates']['start']['localDate'] ?? null,
+                    'time' => $e['dates']['start']['localTime'] ?? null,
+                    'ticket_url' => $e['url'] ?? null,
+                ];
+            })->values(),
         ]);
     }
 

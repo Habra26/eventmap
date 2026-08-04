@@ -73,6 +73,9 @@ async function toggleFavorite() {
       <p class="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
         <i class="ti ti-calendar text-brand-600"></i> {{ event.date ?? 'Date inconnue' }}
       </p>
+      <p v-if="event.sub_events?.length > 1" class="text-xs text-gray-400 mt-2">
+        {{ event.sub_events.length }} dates disponibles
+      </p>
       <RouterLink
         :to="{ name: 'event', params: { id: event.id } }"
         class="mt-3 inline-block text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
