@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
     Route::delete('/profile', [ProfileController::class, 'destroy']);
+    Route::delete('/search-history', [SearchHistoryController::class, 'destroy']);
 });
 
 Route::get('/events', [EventController::class, 'index']);

@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toasts'
+import { useEventsStore } from '@/stores/events'
 import api from '@/axios'
 
 const router = useRouter()
@@ -25,6 +26,8 @@ const deleteLoading = ref(false)
 const searchHistory = ref([])
 const historyLoading = ref(true)
 
+const eventsStore = useEventsStore()
+
 onMounted(async () => {
   name.value = authStore.user?.name ?? ''
   email.value = authStore.user?.email ?? ''
@@ -33,7 +36,6 @@ onMounted(async () => {
     const response = await api.get('/search-history')
     searchHistory.value = response.data
   } catch (e) {
-    // échec silencieux
   } finally {
     historyLoading.value = false
   }
@@ -137,6 +139,18 @@ async function clearHistory() {
     toastStore.error("Erreur lors de la suppression de l'historique")
   }
 }
+
+function rerunSearch(entry) {
+  const params = {}
+  if (entry.keyword) params.keyword = entry.keyword
+  if (entry.city) params.city = entry.city
+  if (entry.category) params.category = entry.category
+  if (entry.start_date) params.startDate = entry.start_date
+  if (entry.end_date) params.endDate = entry.end_date
+
+  eventsStore.fetchEvents(params)
+  router.push('/')
+}
 </script>
 
 <template>
@@ -183,7 +197,7 @@ async function clearHistory() {
         {{ profileLoading ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
     </section>
-
+    <!-- Historique de recherche -->
     <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-gray-900">Historique des recherches</h2>
@@ -204,9 +218,11 @@ async function clearHistory() {
         <li
           v-for="entry in searchHistory"
           :key="entry.id"
-          class="flex items-center justify-between bg-brand-50 rounded-xl px-4 py-3 text-sm"
+          @click="rerunSearch(entry)"
+          class="flex items-center justify-between bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl px-4 py-3 text-sm cursor-pointer"
         >
           <span class="text-gray-700">{{ formatEntry(entry) }}</span>
+          <i class="ti ti-search text-brand-600"></i>
         </li>
       </ul>
     </section>

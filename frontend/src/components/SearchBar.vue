@@ -12,6 +12,9 @@ const startDate = ref('')
 const endDate = ref('')
 const showFilters = ref(false)
 
+const searchHistory = ref([])
+const showHistory = ref(false)
+
 function buildParams() {
   const params = {}
   if (keyword.value) params.keyword = keyword.value
@@ -42,6 +45,37 @@ function handleClear() {
   eventsStore.fetchEvents()
 }
 
+async function openHistory() {
+  showHistory.value = true
+  try {
+    const response = await api.get('/search-history')
+    searchHistory.value = response.data
+  } catch (e) {
+    searchHistory.value = []
+  }
+}
+
+function applyHistoryEntry(entry) {
+  keyword.value = entry.keyword ?? ''
+  city.value = entry.city ?? ''
+  category.value = entry.category ?? ''
+  startDate.value = entry.start_date ?? ''
+  endDate.value = entry.end_date ?? ''
+  showHistory.value = false
+  handleSearch()
+}
+
+function formatHistoryEntry(entry) {
+  const parts = []
+  if (entry.keyword) parts.push(entry.keyword)
+  if (entry.city) parts.push(entry.city)
+  if (entry.category) parts.push(entry.category)
+  if (entry.start_date || entry.end_date) {
+    parts.push(`${entry.start_date ?? '...'} → ${entry.end_date ?? '...'}`)
+  }
+  return parts.length > 0 ? parts.join(' / ') : 'Recherche sans filtre'
+}
+
 const hasFilters = () =>
   keyword.value || city.value || category.value || startDate.value || endDate.value
 </script>
@@ -58,7 +92,24 @@ const hasFilters = () =>
           placeholder="Rechercher un évènement..."
           class="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
           @keyup.enter="handleSearch"
+          @focus="openHistory"
+          @blur="showHistory = false"
         />
+
+        <ul
+          v-if="showHistory && searchHistory.length > 0"
+          class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden"
+        >
+          <li
+            v-for="entry in searchHistory"
+            :key="entry.id"
+            @mousedown.prevent="applyHistoryEntry(entry)"
+            class="px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 cursor-pointer flex items-center gap-2"
+          >
+            <i class="ti ti-history text-brand-500"></i>
+            {{ formatHistoryEntry(entry) }}
+          </li>
+        </ul>
       </div>
       <button
         @click="handleSearch"

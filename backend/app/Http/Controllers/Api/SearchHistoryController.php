@@ -39,4 +39,10 @@ class SearchHistoryController extends Controller
 
         return response()->json($history, 201);
     }
+
+    public function destroy(Request $request) {
+        SearchHistory::where('user_id', $request->user()->id)->delete();
+
+        return response()->json(['message' => 'Historique vidé']);
+    }
 }
