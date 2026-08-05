@@ -92,7 +92,18 @@ class EventController extends Controller
             ->sortBy('date')
             ->values();
 
-        return response()->json($events);
+        $page = (int) $request->input('page', 1);
+        $perPage = (int) $request->input('per_page', 20);
+
+        $paginated = $events->forPage($page, $perPage)->values();
+
+        return response()->json([
+            'data' => $paginated,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $events->count(),
+            'last_page' => (int) max(1, ceil($events->count() / $perPage)),
+        ]);
     }
 
     public function show(string $id)

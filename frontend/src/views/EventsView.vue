@@ -68,6 +68,27 @@ function switchToMap() {
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <EventCard v-for="event in eventsStore.events" :key="event.id" :event="event" />
         </div>
+        <div v-if="eventsStore.totalPages > 1" class="flex items-center justify-center gap-2 mt-6">
+          <button
+            :disabled="eventsStore.currentPage <= 1"
+            @click="eventsStore.goToPage(eventsStore.currentPage - 1)"
+            class="px-3 py-2 rounded-lg border border-gray-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            <i class="ti ti-chevron-left"></i>
+          </button>
+
+          <span class="text-sm text-gray-500">
+            Page {{ eventsStore.currentPage }} / {{ eventsStore.totalPages }}
+          </span>
+
+          <button
+            :disabled="eventsStore.currentPage >= eventsStore.totalPages"
+            @click="eventsStore.goToPage(eventsStore.currentPage + 1)"
+            class="px-3 py-2 rounded-lg border border-gray-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            <i class="ti ti-chevron-right"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Carte -->
