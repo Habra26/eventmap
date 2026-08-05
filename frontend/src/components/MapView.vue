@@ -52,6 +52,9 @@ function addMarkers() {
 }
 
 function onMapMoveEnd() {
+  const hasActiveSearch = eventsStore.lastSearchParams.keyword || eventsStore.lastSearchParams.city
+  if (hasActiveSearch) return
+  
   const bounds = map.getBounds()
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
   const params = { ...eventsStore.lastSearchParams, bbox }
