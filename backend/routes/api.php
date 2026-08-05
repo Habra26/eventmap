@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SearchHistoryController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -20,10 +21,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/favorites', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{eventId}', [FavoriteController::class, 'destroy']);
 
+    Route::get('/search-history', [SearchHistoryController::class, 'index']);
+    Route::post('/search-history', [SearchHistoryController::class, 'store']);
+
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
     Route::delete('/profile', [ProfileController::class, 'destroy']);
+    Route::delete('/search-history', [SearchHistoryController::class, 'destroy']);
 });
 
 Route::get('/events', [EventController::class, 'index']);
