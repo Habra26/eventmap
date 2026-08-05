@@ -24,8 +24,8 @@ class SearchHistoryController extends Controller
             'keyword' => 'nullable|string',
             'city' => 'nullable|string',
             'category' => 'nullable|string',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date'
+            'startDate' => 'nullable|date',
+            'endDate' => 'nullable|date',
         ]);
 
         $history = SearchHistory::create([
@@ -33,8 +33,8 @@ class SearchHistoryController extends Controller
             'keyword' => $request->keyword,
             'city' => $request->city,
             'category' => $request->category,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
+            'start_date' => $request->startDate,
+            'end_date' => $request->endDate,
         ]);
 
         return response()->json($history, 201);

@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useEventsStore } from '@/stores/events'
+import api from '@/axios'
 
 const eventsStore = useEventsStore()
 
@@ -21,8 +22,15 @@ function buildParams() {
   return params
 }
 
-function handleSearch() {
-  eventsStore.fetchEvents(buildParams())
+async function handleSearch() {
+  const params = buildParams()
+  eventsStore.fetchEvents(params)
+
+  if (Object.keys(params).length > 0) {
+    try {
+      await api.post('/search-history', params)
+    } catch (e) {}
+  }
 }
 
 function handleClear() {

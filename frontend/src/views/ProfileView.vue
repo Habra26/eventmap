@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toasts'
+import api from '@/axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -21,9 +22,21 @@ const passwordLoading = ref(false)
 
 const deleteLoading = ref(false)
 
-onMounted(() => {
+const searchHistory = ref([])
+const historyLoading = ref(true)
+
+onMounted(async () => {
   name.value = authStore.user?.name ?? ''
   email.value = authStore.user?.email ?? ''
+
+  try {
+    const response = await api.get('/search-history')
+    searchHistory.value = response.data
+  } catch (e) {
+    // échec silencieux
+  } finally {
+    historyLoading.value = false
+  }
 })
 
 function validateProfile() {
@@ -102,6 +115,28 @@ async function deleteAccount() {
     deleteLoading.value = false
   }
 }
+
+function formatEntry(entry) {
+  const parts = []
+  if (entry.keyword) parts.push(entry.keyword)
+  if (entry.city) parts.push(entry.city)
+  if (entry.category) parts.push(entry.category)
+  if (entry.start_date || entry.end_date) {
+    parts.push(`${entry.start_date ?? '...'} → ${entry.end_date ?? '...'}`)
+  }
+  return parts.length > 0 ? parts.join(' / ') : 'Recherche sans filtre'
+}
+
+async function clearHistory() {
+  if (!confirm('Vider tout ton historique de recherches ?')) return
+  try {
+    await api.delete('/search-history')
+    searchHistory.value = []
+    toastStore.success('Historique vidé')
+  } catch (e) {
+    toastStore.error("Erreur lors de la suppression de l'historique")
+  }
+}
 </script>
 
 <template>
@@ -147,6 +182,33 @@ async function deleteAccount() {
         <i v-if="profileLoading" class="ti ti-loader animate-spin"></i>
         {{ profileLoading ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
+    </section>
+
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900">Historique des recherches</h2>
+        <button
+          v-if="searchHistory.length > 0"
+          @click="clearHistory"
+          class="text-xs text-gray-400 hover:text-accent-600 transition-colors"
+        >
+          Vider l'historique
+        </button>
+      </div>
+
+      <p v-if="historyLoading" class="text-sm text-gray-500">Chargement...</p>
+      <p v-else-if="searchHistory.length === 0" class="text-sm text-gray-500">
+        Aucune recherche récente
+      </p>
+      <ul v-else class="space-y-2">
+        <li
+          v-for="entry in searchHistory"
+          :key="entry.id"
+          class="flex items-center justify-between bg-brand-50 rounded-xl px-4 py-3 text-sm"
+        >
+          <span class="text-gray-700">{{ formatEntry(entry) }}</span>
+        </li>
+      </ul>
     </section>
 
     <!-- Mot de passe -->
