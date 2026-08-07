@@ -20,7 +20,7 @@ class FavoriteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'event_id' => ['required', 'string', 'regex:/^[a-zA-Z0-9]+$/'],
+            'event_id' => ['required', 'string', 'regex:/^[a-zA-Z0-9|]+$/'],
         ]);
 
         $eventId = $request->event_id;
@@ -33,18 +33,40 @@ class FavoriteController extends Controller
             return response()->json(['message' => 'Déjà en favori'], 409);
         }
 
-        // Récupère l'évènement depuis Ticketmaster et le sauvegarde en DB
+        [$attractionId, $venueId] = array_pad(explode('|', $eventId, 2), 2, null);
+
         $apiKey = config('services.ticketmaster.key');
-        $response = (app()->environment('local') ? Http::withoutVerifying() : Http::withOptions([]))
-            ->get("https://app.ticketmaster.com/discovery/v2/events/{$eventId}.json", [
+        $httpClient = app()->environment('local') ? Http::withoutVerifying() : Http::withOptions([]);
+
+        // Tente d'abord comme id d'attraction (event groupé)
+        $response = $httpClient->get('https://app.ticketmaster.com/discovery/v2/events.json', [
+            'apikey' => $apiKey,
+            'attractionId' => $attractionId,
+            'size' => 100,
+        ]);
+
+        $events = collect($response->json('_embedded.events') ?? []);
+
+        if ($venueId && $venueId !== 'no-venue') {
+            $events = $events->filter(function ($e) use ($venueId) {
+                return ($e['_embedded']['venues'][0]['id'] ?? null) === $venueId;
+            })->values();
+        }
+
+        // Fallback : id d'event direct (pas une attraction)
+        if ($events->isEmpty()) {
+            $single = $httpClient->get("https://app.ticketmaster.com/discovery/v2/events/{$attractionId}.json", [
                 'apikey' => $apiKey,
             ]);
 
-        if ($response->failed()) {
-            return response()->json(['error' => 'Évènement introuvable'], 404);
+            if ($single->failed()) {
+                return response()->json(['error' => 'Évènement introuvable'], 404);
+            }
+
+            $events = collect([$single->json()]);
         }
 
-        $data = $response->json();
+        $data = $events->first();
 
         $event = Event::updateOrCreate(
             ['ticketmaster_id' => $eventId],
