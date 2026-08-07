@@ -104,6 +104,12 @@ async function handleSubmit() {
               "
             />
             <p v-if="errors.password" class="text-accent-600 text-xs mt-1">{{ errors.password }}</p>
+            <RouterLink
+              to="/forgot-password"
+              class="text-xs text-brand-700 hover:underline mt-1 inline-block"
+            >
+              Mot de passe oublié ?
+            </RouterLink>
           </div>
 
           <p v-if="generalError" class="text-accent-600 text-sm mb-4">{{ generalError }}</p>
