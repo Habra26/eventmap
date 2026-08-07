@@ -10,6 +10,8 @@ const mapContainer = ref(null)
 let map = null
 let markers = []
 
+const locating = ref(false)
+
 const brandIcon = L.icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -54,7 +56,7 @@ function addMarkers() {
 function onMapMoveEnd() {
   const hasActiveSearch = eventsStore.lastSearchParams.keyword || eventsStore.lastSearchParams.city
   if (hasActiveSearch) return
-  
+
   const bounds = map.getBounds()
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`
   const params = { ...eventsStore.lastSearchParams, bbox }
@@ -69,6 +71,22 @@ function initMap() {
     subdomains: 'abcd',
     maxZoom: 20,
   }).addTo(map)
+
+  if (navigator.geolocation) {
+    locating.value = true
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        map.setView([latitude, longitude], 12)
+        locating.value = false
+      },
+      () => {
+        // Permission refusée ou erreur : on garde la vue par défaut (Belgique)
+        locating.value = false
+      },
+      { timeout: 15000 },
+    )
+  }
 
   map.on('dragend', onMapMoveEnd)
   map.on('zoomend', onMapMoveEnd)
@@ -119,7 +137,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="mapContainer" class="w-full h-full"></div>
+  <div class="relative w-full h-full">
+    <div ref="mapContainer" class="w-full h-full"></div>
+
+    <div
+      v-if="locating"
+      class="absolute top-4 left-1/2 -translate-x-1/2 bg-white shadow-md rounded-full px-4 py-2 text-sm text-gray-600 flex items-center gap-2 z-[1000]"
+    >
+      <i class="ti ti-loader animate-spin text-brand-600"></i>
+      Localisation en cours...
+    </div>
+  </div>
 </template>
 
 <style scoped>
