@@ -6,6 +6,8 @@ import { useToastStore } from '@/stores/toasts'
 import { useEventsStore } from '@/stores/events'
 import api from '@/axios'
 
+const apiUrl = import.meta.env.VITE_API_URL
+
 const router = useRouter()
 const authStore = useAuthStore()
 const toastStore = useToastStore()
@@ -151,6 +153,40 @@ function rerunSearch(entry) {
   eventsStore.fetchEvents(params)
   router.push('/')
 }
+
+const avatarFile = ref(null)
+const avatarPreview = ref(null)
+const avatarLoading = ref(false)
+
+function handleAvatarChange(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+}
+
+async function uploadAvatar() {
+  if (!avatarFile.value) return
+
+  avatarLoading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('avatar', avatarFile.value)
+
+    const response = await api.post('/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    authStore.setAvatar(response.data.user.avatar)
+    toastStore.success('Photo de profil mise à jour')
+    avatarFile.value = null
+  } catch (e) {
+    toastStore.error(e.response?.data?.message ?? "Erreur lors de l'upload")
+  } finally {
+    avatarLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -159,6 +195,44 @@ function rerunSearch(entry) {
       <h1 class="text-3xl font-bold text-brand-900">Mon profil</h1>
       <p class="text-sm text-gray-500 mt-1">Gère tes informations personnelles</p>
     </div>
+
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Photo de profil</h2>
+
+      <div class="flex items-center gap-4">
+        <img
+          :src="
+            avatarPreview ||
+            (authStore.user?.avatar ? `${apiUrl}/storage/${authStore.user.avatar}` : null)
+          "
+          v-if="avatarPreview || authStore.user?.avatar"
+          class="w-20 h-20 rounded-full object-cover border border-gray-200"
+        />
+        <div
+          v-else
+          class="w-20 h-20 rounded-full bg-brand-50 flex items-center justify-center text-2xl text-brand-300"
+        >
+          <i class="ti ti-user"></i>
+        </div>
+
+        <div>
+          <input
+            type="file"
+            accept="image/*"
+            @change="handleAvatarChange"
+            class="text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 file:cursor-pointer cursor-pointer"
+          />
+          <button
+            v-if="avatarFile"
+            @click="uploadAvatar"
+            :disabled="avatarLoading"
+            class="block bg-brand-900 text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-800 transition-colors disabled:opacity-60"
+          >
+            {{ avatarLoading ? 'Envoi...' : 'Enregistrer la photo' }}
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- Infos personnelles -->
     <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">

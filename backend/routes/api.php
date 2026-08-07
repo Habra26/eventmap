@@ -23,12 +23,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/search-history', [SearchHistoryController::class, 'index']);
     Route::post('/search-history', [SearchHistoryController::class, 'store']);
+    Route::delete('/search-history', [SearchHistoryController::class, 'destroy']);
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
     Route::delete('/profile', [ProfileController::class, 'destroy']);
-    Route::delete('/search-history', [SearchHistoryController::class, 'destroy']);
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
 });
 
 Route::get('/events', [EventController::class, 'index']);
