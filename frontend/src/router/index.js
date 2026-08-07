@@ -6,6 +6,8 @@ import EventDetailView from '@/views/EventDetailView.vue'
 import FavoritesView from '@/views/FavoritesView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import LegalView from '@/views/LegalView.vue'
+import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +23,18 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
       meta: { title: 'Se connecter' },
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: ForgotPasswordView,
+      meta: { title: 'Mot de passe oublié' },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: ResetPasswordView,
+      meta: { title: 'Réinitialiser le mot de passe' },
     },
     {
       path: '/',
