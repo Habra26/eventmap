@@ -66,11 +66,14 @@ function onMapMoveEnd() {
 function initMap() {
   map = L.map(mapContainer.value).setView([50.5, 4.5], 8)
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap contributors © CARTO',
-    subdomains: 'abcd',
-    maxZoom: 20,
-  }).addTo(map)
+  L.tileLayer(
+    `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${import.meta.env.VITE_CARTO_API_KEY}`,
+    {
+      attribution: '© OpenStreetMap contributors © CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20,
+    },
+  ).addTo(map)
 
   if (navigator.geolocation) {
     locating.value = true
