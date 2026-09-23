@@ -3,12 +3,15 @@ import { onMounted, onUnmounted, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import { useEventsStore } from '@/stores/events'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+import 'leaflet.markercluster'
 
 const eventsStore = useEventsStore()
 const router = useRouter()
 const mapContainer = ref(null)
 let map = null
-let markers = []
+let clusterGroup = null
 
 const locating = ref(false)
 
@@ -24,8 +27,7 @@ const brandIcon = L.icon({
 })
 
 function clearMarkers() {
-  markers.forEach((m) => m.remove())
-  markers = []
+  clusterGroup.clearLayers()
 }
 
 function addMarkers() {
@@ -34,6 +36,7 @@ function addMarkers() {
     if (!event.latitude || !event.longitude) return
 
     const marker = L.marker([event.latitude, event.longitude], { icon: brandIcon })
+    marker.eventId = event.id
     marker.bindPopup(`
       <div style="width:200px">
         ${event.image_url ? `<img src="${event.image_url}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;">` : ''}
@@ -43,14 +46,18 @@ function addMarkers() {
         <a href="#" data-event-id="${event.id}" class="leaflet-detail-link" style="color:#15803d;font-weight:500;">Voir le détail →</a>
       </div>
     `)
-    marker.addTo(map)
-    markers.push(marker)
+    clusterGroup.addLayer(marker)
 
     marker.on('click', () => {
       map.flyTo([event.latitude, event.longitude], map.getZoom(), { animate: false })
       eventsStore.selectEvent(event.id)
     })
   })
+
+  const hasActiveSearch = eventsStore.lastSearchParams.keyword || eventsStore.lastSearchParams.city
+  if (hasActiveSearch && clusterGroup.getLayers().length > 0) {
+    map.fitBounds(clusterGroup.getBounds(), { padding: [50, 50], maxZoom: 14 })
+  }
 }
 
 function onMapMoveEnd() {
@@ -66,11 +73,20 @@ function onMapMoveEnd() {
 function initMap() {
   map = L.map(mapContainer.value).setView([50.5, 4.5], 8)
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap contributors © CARTO',
-    subdomains: 'abcd',
-    maxZoom: 20,
-  }).addTo(map)
+  L.tileLayer(
+    `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${import.meta.env.VITE_CARTO_API_KEY}`,
+    {
+      attribution: '© OpenStreetMap contributors © CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20,
+    },
+  ).addTo(map)
+
+  clusterGroup = L.markerClusterGroup({
+    maxClusterRadius: 80,
+    disableClusteringAtZoom: 16,
+  })
+  map.addLayer(clusterGroup)
 
   if (navigator.geolocation) {
     locating.value = true
@@ -118,16 +134,10 @@ watch(
 watch(
   () => eventsStore.selectedEventId,
   (id) => {
-    if (!id || !map) return
-    const event = eventsStore.events.find((e) => e.id === id)
-    if (!event?.latitude || !event?.longitude) return
-    map.flyTo([event.latitude, event.longitude], map.getZoom(), { animate: false })
-    markers
-      .find((m) => {
-        const pos = m.getLatLng()
-        return pos.lat == event.latitude && pos.lng == event.longitude
-      })
-      ?.openPopup()
+    if (!id || !clusterGroup) return
+    const marker = clusterGroup.getLayers().find((m) => m.eventId === id)
+    if (!marker) return
+    clusterGroup.zoomToShowLayer(marker, () => marker.openPopup())
   },
 )
 
