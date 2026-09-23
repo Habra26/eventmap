@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 
 class EventController extends Controller
 {
@@ -43,54 +44,64 @@ class EventController extends Controller
         if ($request->has('bbox')) {
             [$south, $west, $north, $east] = explode(',', $request->bbox);
             $params['geoPoint'] = round(($south + $north) / 2, 6) . ',' . round(($west + $east) / 2, 6);
-            $params['radius'] = 50;
+            $params['radius'] = max(5, (int) ceil(max($north - $south, $east - $west) / 2 * 111));
             $params['unit'] = 'km';
         } elseif (!$request->filled('keyword') && !$request->filled('city')) {
             $params['countryCode'] = 'BE';
         }
 
-        $response = $this->httpClient()->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
+        $cacheKey = 'ticketmaster:events:v2:' . md5(json_encode($params));
+        $events = Cache::get($cacheKey);
 
-        if ($response->failed()) {
-            return response()->json(['error' => 'API Ticketmaster indisponible'], 503);
+        if ($events === null) {
+            $response = $this->httpClient()->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'API Ticketmaster indisponible'], 503);
+            }
+
+            $events = collect($response->json('_embedded.events') ?? [])
+                ->groupBy(function ($event) {
+                    $attractionId = $event['_embedded']['attractions'][0]['id'] ?? $event['id'];
+                    $venueId = $event['_embedded']['venues'][0]['id'] ?? 'no-venue';
+                    return $attractionId . '|' . $venueId;
+                })
+                ->map(function ($group) {
+                    $first = $group->first();
+                    $venue = $first['_embedded']['venues'][0] ?? [];
+                    [$lat, $lng] = $this->getCoordinates($venue);
+
+                    $attractionId = $first['_embedded']['attractions'][0]['id'] ?? $first['id'];
+                    $venueId = $venue['id'] ?? 'no-venue';
+
+                    return [
+                        'id' => $attractionId . '|' . $venueId,
+                        'title' => trim(explode('|', $first['name'])[0]),
+                        'date' => $first['dates']['start']['localDate'] ?? null,
+                        'city' => $venue['city']['name'] ?? null,
+                        'latitude' => $lat,
+                        'longitude' => $lng,
+                        'image_url' => $first['images'][0]['url'] ?? null,
+                        'ticket_url' => $first['url'] ?? null,
+                        'category' => $first['classifications'][0]['segment']['name'] ?? null,
+                        'sub_events' => $group->map(function ($e) {
+                            return [
+                                'id' => $e['id'],
+                                'name' => $e['name'],
+                                'date' => $e['dates']['start']['localDate'] ?? null,
+                                'ticket_url' => $e['url'] ?? null,
+                            ];
+                        })->values()->toArray(),
+                    ];
+                })
+                ->sortBy('date')
+                ->values()
+                ->toArray();
+
+            Cache::put($cacheKey, $events, now()->addMinutes(15));
         }
 
-        $events = collect($response->json('_embedded.events') ?? [])
-            ->groupBy(function ($event) {
-                $attractionId = $event['_embedded']['attractions'][0]['id'] ?? $event['id'];
-                $venueId = $event['_embedded']['venues'][0]['id'] ?? 'no-venue';
-                return $attractionId . '|' . $venueId;
-            })
-            ->map(function ($group) {
-                $first = $group->first();
-                $venue = $first['_embedded']['venues'][0] ?? [];
-                [$lat, $lng] = $this->getCoordinates($venue);
-
-                $attractionId = $first['_embedded']['attractions'][0]['id'] ?? $first['id'];
-                $venueId = $venue['id'] ?? 'no-venue';
-
-                return [
-                    'id' => $attractionId . '|' . $venueId,
-                    'title' => trim(explode('|', $first['name'])[0]),
-                    'date' => $first['dates']['start']['localDate'] ?? null,
-                    'city' => $venue['city']['name'] ?? null,
-                    'latitude' => $lat,
-                    'longitude' => $lng,
-                    'image_url' => $first['images'][0]['url'] ?? null,
-                    'ticket_url' => $first['url'] ?? null,
-                    'category' => $first['classifications'][0]['segment']['name'] ?? null,
-                    'sub_events' => $group->map(function ($e) {
-                        return [
-                            'id' => $e['id'],
-                            'name' => $e['name'],
-                            'date' => $e['dates']['start']['localDate'] ?? null,
-                            'ticket_url' => $e['url'] ?? null,
-                        ];
-                    })->values(),
-                ];
-            })
-            ->sortBy('date')
-            ->values();
+        $events = collect($events);
 
         $page = (int) $request->input('page', 1);
         $perPage = (int) $request->input('per_page', 20);
@@ -109,6 +120,12 @@ class EventController extends Controller
     public function show(string $id)
     {
         [$attractionId, $venueId] = array_pad(explode('|', $id, 2), 2, null);
+
+        $cacheKey = 'ticketmaster:event:' . $id;
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return response()->json($cached);
+        }
 
         $response = $this->httpClient()->get('https://app.ticketmaster.com/discovery/v2/events.json', [
             'apikey' => config('services.ticketmaster.key'),
@@ -141,7 +158,7 @@ class EventController extends Controller
         $first = $events->first();
         $venue = $first['_embedded']['venues'][0] ?? [];
 
-        return response()->json([
+        $result = [
             'id' => $id,
             'title' => trim(explode('|', $first['name'])[0]),
             'city' => $venue['city']['name'] ?? null,
@@ -160,7 +177,11 @@ class EventController extends Controller
                     'ticket_url' => $e['url'] ?? null,
                 ];
             })->values(),
-        ]);
+        ];
+
+        Cache::put($cacheKey, $result, now()->addMinutes(15));
+
+        return response()->json($result);
     }
 
     private function getCoordinates(array $venue): array
