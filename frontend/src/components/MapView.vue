@@ -92,9 +92,11 @@ function initMap() {
     locating.value = true
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        locating.value = false
+        // La carte a pu être détruite entre-temps (l'utilisateur a quitté la page)
+        if (!map) return
         const { latitude, longitude } = position.coords
         map.setView([latitude, longitude], 12)
-        locating.value = false
       },
       () => {
         // Permission refusée ou erreur : on garde la vue par défaut (Belgique)
@@ -143,6 +145,8 @@ watch(
 
 onUnmounted(() => {
   if (map) map.remove()
+  map = null
+  clusterGroup = null
 })
 </script>
 
