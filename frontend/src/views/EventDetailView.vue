@@ -105,6 +105,10 @@ async function toggleFavorite() {
           <i class="ti ti-building text-brand-600"></i>
           <span>{{ event.venue ?? 'Lieu inconnu' }}</span>
         </div>
+        <div v-if="event.address" class="flex items-center gap-2 text-gray-600 sm:col-span-2">
+          <i class="ti ti-map-2 text-brand-600"></i>
+          <span>{{ event.address }}</span>
+        </div>
       </div>
 
       <p class="text-gray-600 leading-relaxed mb-6">
