@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\UserEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
@@ -50,17 +51,18 @@ class EventController extends Controller
             $params['countryCode'] = 'BE';
         }
 
-        $cacheKey = 'ticketmaster:events:v2:' . md5(json_encode($params));
-        $events = Cache::get($cacheKey);
+        // Évènements Ticketmaster (mis en cache 15 min)
+        $cacheKey = 'ticketmaster:events:v3:' . md5(json_encode($params));
+        $ticketmasterEvents = Cache::get($cacheKey);
 
-        if ($events === null) {
+        if ($ticketmasterEvents === null) {
             $response = $this->httpClient()->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
 
             if ($response->failed()) {
                 return response()->json(['error' => 'API Ticketmaster indisponible'], 503);
             }
 
-            $events = collect($response->json('_embedded.events') ?? [])
+            $ticketmasterEvents = collect($response->json('_embedded.events') ?? [])
                 ->groupBy(function ($event) {
                     $attractionId = $event['_embedded']['attractions'][0]['id'] ?? $event['id'];
                     $venueId = $event['_embedded']['venues'][0]['id'] ?? 'no-venue';
@@ -76,6 +78,7 @@ class EventController extends Controller
 
                     return [
                         'id' => $attractionId . '|' . $venueId,
+                        'source' => 'ticketmaster',
                         'title' => trim(explode('|', $first['name'])[0]),
                         'date' => $first['dates']['start']['localDate'] ?? null,
                         'city' => $venue['city']['name'] ?? null,
@@ -94,14 +97,19 @@ class EventController extends Controller
                         })->values()->toArray(),
                     ];
                 })
-                ->sortBy('date')
                 ->values()
                 ->toArray();
 
-            Cache::put($cacheKey, $events, now()->addMinutes(15));
+            Cache::put($cacheKey, $ticketmasterEvents, now()->addMinutes(15));
         }
 
-        $events = collect($events);
+        // Évènements créés par les utilisateurs (jamais en cache)
+        $userEvents = $this->getUserEvents($request);
+
+        $events = collect($ticketmasterEvents)
+            ->concat($userEvents)
+            ->sortBy('date')
+            ->values();
 
         $page = (int) $request->input('page', 1);
         $perPage = (int) $request->input('per_page', 20);
@@ -119,6 +127,39 @@ class EventController extends Controller
 
     public function show(string $id)
     {
+        // Évènement créé par un utilisateur
+        if (str_starts_with($id, 'user-')) {
+            $event = UserEvent::find((int) substr($id, 5));
+
+            if (!$event) {
+                return response()->json(['error' => 'Évènement introuvable'], 404);
+            }
+
+            return response()->json([
+                'id' => $id,
+                'source' => 'user',
+                'title' => $event->title,
+                'city' => $event->city,
+                'venue' => $event->venue,
+                'address' => $event->address,
+                'latitude' => $event->latitude,
+                'longitude' => $event->longitude,
+                'image_url' => $event->image ? asset('storage/' . $event->image) : null,
+                'category' => $event->category,
+                'description' => $event->description,
+                'sub_events' => [
+                    [
+                        'id' => $id,
+                        'name' => $event->title,
+                        'date' => $event->date->format('Y-m-d'),
+                        'time' => $event->time ? substr($event->time, 0, 5) : null,
+                        'ticket_url' => null,
+                    ]
+                ],
+            ]);
+        }
+
+        // Évènement Ticketmaster
         [$attractionId, $venueId] = array_pad(explode('|', $id, 2), 2, null);
 
         $cacheKey = 'ticketmaster:event:' . $id;
@@ -160,6 +201,7 @@ class EventController extends Controller
 
         $result = [
             'id' => $id,
+            'source' => 'ticketmaster',
             'title' => trim(explode('|', $first['name'])[0]),
             'city' => $venue['city']['name'] ?? null,
             'venue' => $venue['name'] ?? null,
@@ -182,6 +224,62 @@ class EventController extends Controller
         Cache::put($cacheKey, $result, now()->addMinutes(15));
 
         return response()->json($result);
+    }
+
+    private function getUserEvents(Request $request): array
+    {
+        $query = UserEvent::query()->whereDate('date', '>=', today());
+
+        if ($request->filled('keyword')) {
+            $query->where('title', 'like', '%' . $request->keyword . '%');
+        }
+
+        if ($request->filled('city')) {
+            $query->where('city', 'like', '%' . $request->city . '%');
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->filled('startDate')) {
+            $query->whereDate('date', '>=', $request->startDate);
+        }
+
+        if ($request->filled('endDate')) {
+            $query->whereDate('date', '<=', $request->endDate);
+        }
+
+        if ($request->has('bbox')) {
+            [$south, $west, $north, $east] = explode(',', $request->bbox);
+            $query->whereBetween('latitude', [$south, $north])
+                ->whereBetween('longitude', [$west, $east]);
+        }
+
+        return $query->get()->map(function ($event) {
+            $id = 'user-' . $event->id;
+
+            return [
+                'id' => $id,
+                'source' => 'user',
+                'title' => $event->title,
+                'date' => $event->date->format('Y-m-d'),
+                'city' => $event->city,
+                'latitude' => $event->latitude,
+                'longitude' => $event->longitude,
+                'image_url' => $event->image ? asset('storage/' . $event->image) : null,
+                'ticket_url' => null,
+                'category' => $event->category,
+                'sub_events' => [
+                    [
+                        'id' => $id,
+                        'name' => $event->title,
+                        'date' => $event->date->format('Y-m-d'),
+                        'ticket_url' => null,
+                    ]
+                ],
+            ];
+        })->toArray();
     }
 
     private function getCoordinates(array $venue): array
