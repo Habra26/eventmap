@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Favorite;
+use App\Models\UserEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -20,57 +21,74 @@ class FavoriteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'event_id' => ['required', 'string', 'regex:/^[a-zA-Z0-9|]+$/'],
+            'event_id' => ['required', 'string', 'regex:/^[a-zA-Z0-9|-]+$/'],
         ]);
 
         $eventId = $request->event_id;
 
-        $already = Favorite::where('user_id', $request->user()->id)
-            ->where('event_id', $eventId)
-            ->exists();
+        // Vérifie si l'évènement est déjà en favori (via l'id interne de la table events)
+        $existing = Event::where('ticketmaster_id', $eventId)->first();
 
-        if ($already) {
+        if ($existing && Favorite::where('user_id', $request->user()->id)->where('event_id', $existing->id)->exists()) {
             return response()->json(['message' => 'Déjà en favori'], 409);
         }
 
-        [$attractionId, $venueId] = array_pad(explode('|', $eventId, 2), 2, null);
+        if (str_starts_with($eventId, 'user-')) {
+            // Évènement créé par un utilisateur : lu en base
+            $userEvent = UserEvent::find((int) substr($eventId, 5));
 
-        $apiKey = config('services.ticketmaster.key');
-        $httpClient = app()->environment('local') ? Http::withoutVerifying() : Http::withOptions([]);
-
-        // Tente d'abord comme id d'attraction (event groupé)
-        $response = $httpClient->get('https://app.ticketmaster.com/discovery/v2/events.json', [
-            'apikey' => $apiKey,
-            'attractionId' => $attractionId,
-            'size' => 100,
-        ]);
-
-        $events = collect($response->json('_embedded.events') ?? []);
-
-        if ($venueId && $venueId !== 'no-venue') {
-            $events = $events->filter(function ($e) use ($venueId) {
-                return ($e['_embedded']['venues'][0]['id'] ?? null) === $venueId;
-            })->values();
-        }
-
-        // Fallback : id d'event direct (pas une attraction)
-        if ($events->isEmpty()) {
-            $single = $httpClient->get("https://app.ticketmaster.com/discovery/v2/events/{$attractionId}.json", [
-                'apikey' => $apiKey,
-            ]);
-
-            if ($single->failed()) {
+            if (!$userEvent) {
                 return response()->json(['error' => 'Évènement introuvable'], 404);
             }
 
-            $events = collect([$single->json()]);
-        }
+            $attributes = [
+                'title' => $userEvent->title,
+                'date' => $userEvent->date->format('Y-m-d'),
+                'city' => $userEvent->city,
+                'latitude' => $userEvent->latitude,
+                'longitude' => $userEvent->longitude,
+                'image_url' => $userEvent->image ? asset('storage/' . $userEvent->image) : null,
+                'ticket_url' => null,
+                'source' => 'user',
+            ];
+        } else {
+            // Évènement Ticketmaster
+            [$attractionId, $venueId] = array_pad(explode('|', $eventId, 2), 2, null);
 
-        $data = $events->first();
+            $apiKey = config('services.ticketmaster.key');
+            $httpClient = app()->environment('local') ? Http::withoutVerifying() : Http::withOptions([]);
 
-        $event = Event::updateOrCreate(
-            ['ticketmaster_id' => $eventId],
-            [
+            // Tente d'abord comme id d'attraction (event groupé)
+            $response = $httpClient->get('https://app.ticketmaster.com/discovery/v2/events.json', [
+                'apikey' => $apiKey,
+                'attractionId' => $attractionId,
+                'size' => 100,
+            ]);
+
+            $events = collect($response->json('_embedded.events') ?? []);
+
+            if ($venueId && $venueId !== 'no-venue') {
+                $events = $events->filter(function ($e) use ($venueId) {
+                    return ($e['_embedded']['venues'][0]['id'] ?? null) === $venueId;
+                })->values();
+            }
+
+            // Fallback : id d'event direct (pas une attraction)
+            if ($events->isEmpty()) {
+                $single = $httpClient->get("https://app.ticketmaster.com/discovery/v2/events/{$attractionId}.json", [
+                    'apikey' => $apiKey,
+                ]);
+
+                if ($single->failed()) {
+                    return response()->json(['error' => 'Évènement introuvable'], 404);
+                }
+
+                $events = collect([$single->json()]);
+            }
+
+            $data = $events->first();
+
+            $attributes = [
                 'title' => $data['name'],
                 'date' => $data['dates']['start']['localDate'] ?? null,
                 'city' => $data['_embedded']['venues'][0]['city']['name'] ?? null,
@@ -79,7 +97,12 @@ class FavoriteController extends Controller
                 'image_url' => $data['images'][0]['url'] ?? null,
                 'ticket_url' => $data['url'] ?? null,
                 'source' => 'ticketmaster',
-            ]
+            ];
+        }
+
+        $event = Event::updateOrCreate(
+            ['ticketmaster_id' => $eventId],
+            $attributes
         );
 
         Favorite::create([

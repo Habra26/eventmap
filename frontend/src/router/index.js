@@ -3,6 +3,7 @@ import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
 import EventsView from '@/views/EventsView.vue'
 import EventDetailView from '@/views/EventDetailView.vue'
+import CreateEventView from '@/views/CreateEventView.vue'
 import FavoritesView from '@/views/FavoritesView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import LegalView from '@/views/LegalView.vue'
@@ -41,6 +42,12 @@ const router = createRouter({
       name: 'home',
       component: EventsView,
       meta: { title: 'Évènements' },
+    },
+    {
+      path: '/events/create',
+      name: 'event-create',
+      component: CreateEventView,
+      meta: { title: 'Créer un évènement', requiresAuth: true },
     },
     {
       path: '/events/:id',
