@@ -50,6 +50,12 @@ const router = createRouter({
       meta: { title: 'Créer un évènement', requiresAuth: true },
     },
     {
+      path: '/events/:id/edit',
+      name: 'event-edit',
+      component: CreateEventView,
+      meta: { title: "Modifier l'évènement", requiresAuth: true },
+    },
+    {
       path: '/events/:id',
       name: 'event',
       component: EventDetailView,
