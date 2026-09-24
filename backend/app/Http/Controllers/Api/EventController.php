@@ -127,7 +127,6 @@ class EventController extends Controller
 
     public function show(string $id)
     {
-        // Évènement créé par un utilisateur
         if (str_starts_with($id, 'user-')) {
             $event = UserEvent::with('user')->find((int) substr($id, 5));
 
@@ -139,7 +138,10 @@ class EventController extends Controller
                 'id' => $id,
                 'source' => 'user',
                 'author' => $event->user?->name,
+                'is_owner' => auth('sanctum')->id() !== null && (int) auth('sanctum')->id() === (int) $event->user_id,
                 'title' => $event->title,
+                'date' => $event->date->format('Y-m-d'),
+                'time' => $event->time ? substr($event->time, 0, 5) : null,
                 'city' => $event->city,
                 'venue' => $event->venue,
                 'address' => $event->address,

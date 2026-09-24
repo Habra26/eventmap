@@ -17,6 +17,7 @@ const toastStore = useToastStore()
 const event = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const deleting = ref(false)
 
 const isFav = computed(() => (event.value ? favoritesStore.isFavorite(event.value.id) : false))
 
@@ -46,6 +47,22 @@ async function toggleFavorite() {
     }
   } catch (e) {
     toastStore.error('Une erreur est survenue')
+  }
+}
+
+async function deleteEvent() {
+  if (!confirm(`Supprimer définitivement « ${event.value.title} » ?`)) return
+
+  deleting.value = true
+  try {
+    const numericId = event.value.id.replace('user-', '')
+    await api.delete(`/user-events/${numericId}`)
+    toastStore.success('Évènement supprimé')
+    router.push('/')
+  } catch (e) {
+    toastStore.error('Impossible de supprimer cet évènement')
+  } finally {
+    deleting.value = false
   }
 }
 </script>
@@ -104,6 +121,25 @@ async function toggleFavorite() {
         Proposé par <span class="font-medium text-brand-700">{{ event.author }}</span>
       </p>
       <div v-else class="mb-2"></div>
+
+      <!-- Actions du créateur -->
+      <div v-if="event.is_owner" class="flex flex-wrap gap-2 mb-6">
+        <RouterLink
+          :to="`/events/${event.id}/edit`"
+          class="border border-gray-200 text-brand-800 hover:bg-gray-50 transition-colors px-4 py-2 rounded-xl text-sm flex items-center gap-1"
+        >
+          <i class="ti ti-pencil"></i> Modifier
+        </RouterLink>
+        <button
+          @click="deleteEvent"
+          :disabled="deleting"
+          class="border border-gray-200 text-accent-600 hover:bg-gray-50 transition-colors px-4 py-2 rounded-xl text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <i v-if="deleting" class="ti ti-loader animate-spin"></i>
+          <i v-else class="ti ti-trash"></i>
+          Supprimer
+        </button>
+      </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div class="flex items-center gap-2 text-gray-600">
