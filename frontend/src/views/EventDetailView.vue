@@ -71,7 +71,10 @@ async function toggleFavorite() {
           :alt="event.title"
           class="w-full h-72 object-cover rounded-2xl mb-6"
         />
-        <div v-else class="w-full h-72 bg-brand-50 rounded-2xl mb-6 flex items-center justify-center">
+        <div
+          v-else
+          class="w-full h-72 bg-brand-50 rounded-2xl mb-6 flex items-center justify-center"
+        >
           <i class="ti ti-calendar-event text-5xl text-brand-300"></i>
         </div>
 
@@ -108,7 +111,20 @@ async function toggleFavorite() {
         {{ event.description ?? 'Aucune description disponible' }}
       </p>
 
-      <div v-if="event.sub_events?.length" class="space-y-2 mb-6">
+      <!-- Évènement créé par un utilisateur : date simple, sans billetterie -->
+      <div v-if="event.source === 'user' && event.sub_events?.length" class="mb-6">
+        <h2 class="text-lg font-semibold text-brand-900 mb-2">Date</h2>
+        <div class="flex items-center gap-3 bg-brand-50 rounded-xl px-4 py-3">
+          <i class="ti ti-calendar-event text-brand-700 text-xl"></i>
+          <p class="font-medium text-gray-900">
+            {{ event.sub_events[0].date
+            }}<span v-if="event.sub_events[0].time"> à {{ event.sub_events[0].time }}</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Évènement Ticketmaster : liste des dates avec lien vers la billetterie -->
+      <div v-else-if="event.sub_events?.length" class="space-y-2 mb-6">
         <h2 class="text-lg font-semibold text-brand-900 mb-2">Tickets disponibles</h2>
         <a
           v-for="sub in event.sub_events"
@@ -127,7 +143,7 @@ async function toggleFavorite() {
         </a>
       </div>
 
-      <p class="text-xs text-gray-400 mt-6">
+      <p v-if="event.source !== 'user'" class="text-xs text-gray-400 mt-6">
         Données fournies par Ticketmaster
       </p>
     </div>

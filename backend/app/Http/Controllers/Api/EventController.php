@@ -162,7 +162,7 @@ class EventController extends Controller
         // Évènement Ticketmaster
         [$attractionId, $venueId] = array_pad(explode('|', $id, 2), 2, null);
 
-        $cacheKey = 'ticketmaster:event:' . $id;
+        $cacheKey = 'ticketmaster:event:v2:' . $id;
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
             return response()->json($cached);
@@ -218,7 +218,7 @@ class EventController extends Controller
                     'time' => $e['dates']['start']['localTime'] ?? null,
                     'ticket_url' => $e['url'] ?? null,
                 ];
-            })->values(),
+            })->values()->toArray(),
         ];
 
         Cache::put($cacheKey, $result, now()->addMinutes(15));
