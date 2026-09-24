@@ -129,7 +129,7 @@ class EventController extends Controller
     {
         // Évènement créé par un utilisateur
         if (str_starts_with($id, 'user-')) {
-            $event = UserEvent::find((int) substr($id, 5));
+            $event = UserEvent::with('user')->find((int) substr($id, 5));
 
             if (!$event) {
                 return response()->json(['error' => 'Évènement introuvable'], 404);
@@ -138,6 +138,7 @@ class EventController extends Controller
             return response()->json([
                 'id' => $id,
                 'source' => 'user',
+                'author' => $event->user?->name,
                 'title' => $event->title,
                 'city' => $event->city,
                 'venue' => $event->venue,

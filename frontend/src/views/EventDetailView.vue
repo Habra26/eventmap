@@ -94,7 +94,16 @@ async function toggleFavorite() {
         {{ event.category }}
       </span>
 
-      <h1 class="text-3xl font-bold text-brand-900 mb-4">{{ event.title }}</h1>
+      <h1 class="text-3xl font-bold text-brand-900 mb-2">{{ event.title }}</h1>
+
+      <p
+        v-if="event.source === 'user' && event.author"
+        class="flex items-center gap-2 text-sm text-gray-500 mb-4"
+      >
+        <i class="ti ti-user text-brand-600"></i>
+        Proposé par <span class="font-medium text-brand-700">{{ event.author }}</span>
+      </p>
+      <div v-else class="mb-2"></div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div class="flex items-center gap-2 text-gray-600">
