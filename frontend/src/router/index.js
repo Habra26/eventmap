@@ -9,6 +9,7 @@ import ProfileView from '@/views/ProfileView.vue'
 import LegalView from '@/views/LegalView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
+import MyEventsView from '@/views/MyEventsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -66,6 +67,12 @@ const router = createRouter({
       name: 'favorites',
       component: FavoritesView,
       meta: { title: 'Mes favoris', requiresAuth: true },
+    },
+    {
+      path: '/my-events',
+      name: 'my-events',
+      component: MyEventsView,
+      meta: { title: 'Mes évènements', requiresAuth: true },
     },
     {
       path: '/profile',

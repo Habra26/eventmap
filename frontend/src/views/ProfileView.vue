@@ -28,6 +28,9 @@ const deleteLoading = ref(false)
 const searchHistory = ref([])
 const historyLoading = ref(true)
 
+const upcomingEventsCount = ref(0)
+const myEventsLoading = ref(true)
+
 const eventsStore = useEventsStore()
 
 onMounted(async () => {
@@ -40,6 +43,14 @@ onMounted(async () => {
   } catch (e) {
   } finally {
     historyLoading.value = false
+  }
+
+  try {
+    const response = await api.get('/my-events')
+    upcomingEventsCount.value = response.data.filter((e) => !e.is_past).length
+  } catch (e) {
+  } finally {
+    myEventsLoading.value = false
   }
 })
 
@@ -271,6 +282,36 @@ async function uploadAvatar() {
         {{ profileLoading ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
     </section>
+
+    <!-- Mes évènements -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Mes évènements</h2>
+
+      <p v-if="myEventsLoading" class="text-sm text-gray-500">Chargement...</p>
+      <RouterLink
+        v-else-if="upcomingEventsCount > 0"
+        to="/my-events"
+        class="flex items-center justify-between bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl px-4 py-3 text-sm"
+      >
+        <span class="text-gray-700 flex items-center gap-2">
+          <i class="ti ti-calendar-event text-brand-600"></i>
+          {{ upcomingEventsCount }} évènement{{ upcomingEventsCount > 1 ? 's' : '' }} à venir
+        </span>
+        <span class="text-brand-700 font-medium flex items-center gap-1">
+          Gérer <i class="ti ti-arrow-right"></i>
+        </span>
+      </RouterLink>
+      <div v-else class="flex items-center justify-between gap-4">
+        <p class="text-sm text-gray-500">Tu n'as aucun évènement à venir.</p>
+        <RouterLink
+          to="/my-events"
+          class="text-sm text-brand-700 hover:text-brand-900 transition-colors flex items-center gap-1 whitespace-nowrap"
+        >
+          Voir mes évènements <i class="ti ti-arrow-right"></i>
+        </RouterLink>
+      </div>
+    </section>
+
     <!-- Historique de recherche -->
     <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
@@ -365,7 +406,8 @@ async function uploadAvatar() {
     <section class="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
       <h2 class="text-lg font-semibold mb-2 text-red-600">Zone dangereuse</h2>
       <p class="text-sm text-gray-500 mb-4">
-        La suppression de ton compte est définitive et supprime tous tes favoris.
+        La suppression de ton compte est définitive et supprime tous tes favoris et tous les
+        évènements que tu as créés.
       </p>
       <button
         @click="deleteAccount"

@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/favorites', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{eventId}', [FavoriteController::class, 'destroy']);
 
+    Route::get('/my-events', [UserEventController::class, 'index']);
     Route::post('/user-events', [UserEventController::class, 'store']);
     Route::put('/user-events/{userEvent}', [UserEventController::class, 'update']);
     Route::delete('/user-events/{userEvent}', [UserEventController::class, 'destroy']);

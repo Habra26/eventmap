@@ -58,6 +58,27 @@ class UserEventController extends Controller
         ];
     }
 
+    public function index(Request $request)
+    {
+        $events = $request->user()->userEvents()
+            ->orderBy('date')
+            ->get()
+            ->map(function ($event) {
+                return [
+                    'id' => 'user-' . $event->id,
+                    'title' => $event->title,
+                    'date' => $event->date->format('Y-m-d'),
+                    'time' => $event->time ? substr($event->time, 0, 5) : null,
+                    'city' => $event->city,
+                    'category' => $event->category,
+                    'image_url' => $event->image ? asset('storage/' . $event->image) : null,
+                    'is_past' => $event->date->lt(today()),
+                ];
+            });
+
+        return response()->json($events);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate($this->rules(), $this->messages());
