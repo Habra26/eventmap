@@ -54,6 +54,10 @@ function addMarkers() {
     marker.on('click', () => {
       map.flyTo([event.latitude, event.longitude], map.getZoom(), { animate: false })
       eventsStore.selectEvent(event.id)
+      // L'évènement est sur une autre page de la liste : on charge cette page
+      if (event.page && event.page !== eventsStore.currentPage) {
+        eventsStore.goToPage(event.page)
+      }
     })
   })
 
