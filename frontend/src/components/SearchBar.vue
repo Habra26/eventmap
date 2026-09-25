@@ -6,12 +6,16 @@ import api from '@/axios'
 
 const eventsStore = useEventsStore()
 
-const keyword = ref('')
-const city = ref('')
-const category = ref('')
-const startDate = ref('')
-const endDate = ref('')
-const showFilters = ref(false)
+// Les champs reprennent la recherche en cours (par exemple lancée depuis l'historique du profil)
+const initial = eventsStore.lastSearchParams
+const keyword = ref(initial.keyword ?? '')
+const city = ref(initial.city ?? '')
+const category = ref(initial.category ?? '')
+const startDate = ref(initial.startDate ?? '')
+const endDate = ref(initial.endDate ?? '')
+const showFilters = ref(
+  !!(initial.city || initial.category || initial.startDate || initial.endDate),
+)
 
 const searchHistory = ref([])
 const showHistory = ref(false)

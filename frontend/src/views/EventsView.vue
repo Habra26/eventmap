@@ -11,7 +11,12 @@ const eventsStore = useEventsStore()
 const activeTab = ref('list')
 
 onMounted(() => {
-  eventsStore.fetchEvents()
+  // Une recherche est déjà en cours (lancée depuis l'historique du profil) : on ne l'écrase pas
+  const p = eventsStore.lastSearchParams
+  const hasActiveFilters = p.keyword || p.city || p.category || p.startDate || p.endDate
+  if (!hasActiveFilters) {
+    eventsStore.fetchEvents()
+  }
 })
 
 function switchToMap() {

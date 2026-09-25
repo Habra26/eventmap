@@ -100,7 +100,10 @@ function initMap() {
   })
   map.addLayer(clusterGroup)
 
-  if (navigator.geolocation) {
+  // Pas de recentrage sur l'utilisateur si une recherche par mot-clé ou ville est en cours :
+  // la carte doit rester cadrée sur les résultats
+  const hasActiveSearch = eventsStore.lastSearchParams.keyword || eventsStore.lastSearchParams.city
+  if (navigator.geolocation && !hasActiveSearch) {
     locating.value = true
     navigator.geolocation.getCurrentPosition(
       (position) => {
