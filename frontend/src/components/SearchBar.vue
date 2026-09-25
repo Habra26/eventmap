@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useEventsStore } from '@/stores/events'
+import { categoryLabel } from '@/utils/categories'
 import api from '@/axios'
 
 const eventsStore = useEventsStore()
@@ -69,7 +70,7 @@ function formatHistoryEntry(entry) {
   const parts = []
   if (entry.keyword) parts.push(entry.keyword)
   if (entry.city) parts.push(entry.city)
-  if (entry.category) parts.push(entry.category)
+  if (entry.category) parts.push(categoryLabel(entry.category))
   if (entry.start_date || entry.end_date) {
     parts.push(`${entry.start_date ?? '...'} → ${entry.end_date ?? '...'}`)
   }

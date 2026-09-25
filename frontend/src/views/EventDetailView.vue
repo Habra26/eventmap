@@ -5,6 +5,7 @@ import api from '@/axios'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toasts'
+import { categoryLabel } from '@/utils/categories'
 import Loader from '@/components/Loader.vue'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 
@@ -108,7 +109,7 @@ async function deleteEvent() {
         v-if="event.category"
         class="inline-block bg-brand-100 text-brand-800 text-xs font-medium px-3 py-1 rounded-full mb-3"
       >
-        {{ event.category }}
+        {{ categoryLabel(event.category) }}
       </span>
 
       <h1 class="text-3xl font-bold text-brand-900 mb-2">{{ event.title }}</h1>

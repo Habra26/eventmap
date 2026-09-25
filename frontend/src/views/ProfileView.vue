@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toasts'
 import { useEventsStore } from '@/stores/events'
 import api from '@/axios'
+import { categoryLabel } from '@/utils/categories'
 
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -135,7 +136,7 @@ function formatEntry(entry) {
   const parts = []
   if (entry.keyword) parts.push(entry.keyword)
   if (entry.city) parts.push(entry.city)
-  if (entry.category) parts.push(entry.category)
+  if (entry.category) parts.push(categoryLabel(entry.category))
   if (entry.start_date || entry.end_date) {
     parts.push(`${entry.start_date ?? '...'} → ${entry.end_date ?? '...'}`)
   }
