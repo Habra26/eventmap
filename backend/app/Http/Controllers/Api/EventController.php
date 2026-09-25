@@ -116,8 +116,23 @@ class EventController extends Controller
 
         $paginated = $events->forPage($page, $perPage)->values();
 
+        // Tous les évènements de la zone, en version allégée, pour la carte
+        $markers = $events
+            ->filter(fn($e) => $e['latitude'] && $e['longitude'])
+            ->map(fn($e) => [
+                'id' => $e['id'],
+                'title' => $e['title'],
+                'date' => $e['date'],
+                'city' => $e['city'],
+                'latitude' => $e['latitude'],
+                'longitude' => $e['longitude'],
+                'image_url' => $e['image_url'],
+            ])
+            ->values();
+
         return response()->json([
             'data' => $paginated,
+            'markers' => $markers,
             'current_page' => $page,
             'per_page' => $perPage,
             'total' => $events->count(),
@@ -127,6 +142,7 @@ class EventController extends Controller
 
     public function show(string $id)
     {
+        // Évènement créé par un utilisateur
         if (str_starts_with($id, 'user-')) {
             $event = UserEvent::with('user')->find((int) substr($id, 5));
 

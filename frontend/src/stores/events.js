@@ -4,6 +4,7 @@ import api from '@/axios'
 
 export const useEventsStore = defineStore('events', () => {
   const events = ref([])
+  const markers = ref([])
   const loading = ref(false)
   const error = ref(null)
   const selectedEventId = ref(null)
@@ -23,6 +24,7 @@ export const useEventsStore = defineStore('events', () => {
     try {
       const response = await api.get('/events', { params })
       events.value = response.data.data
+      markers.value = response.data.markers ?? response.data.data
       currentPage.value = response.data.current_page
       totalPages.value = response.data.last_page
       total.value = response.data.total
@@ -39,6 +41,7 @@ export const useEventsStore = defineStore('events', () => {
 
   return {
     events,
+    markers,
     loading,
     error,
     fetchEvents,
