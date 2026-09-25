@@ -13,6 +13,9 @@ const mapContainer = ref(null)
 let map = null
 let clusterGroup = null
 
+// true pendant un déplacement de carte déclenché par l'application (et non par l'utilisateur)
+let programmaticMove = false
+
 const locating = ref(false)
 
 const brandIcon = L.icon({
@@ -32,7 +35,7 @@ function clearMarkers() {
 
 function addMarkers() {
   clearMarkers()
-  eventsStore.events.forEach((event) => {
+  eventsStore.markers.forEach((event) => {
     if (!event.latitude || !event.longitude) return
 
     const marker = L.marker([event.latitude, event.longitude], { icon: brandIcon })
@@ -51,16 +54,25 @@ function addMarkers() {
     marker.on('click', () => {
       map.flyTo([event.latitude, event.longitude], map.getZoom(), { animate: false })
       eventsStore.selectEvent(event.id)
+      // L'évènement est sur une autre page de la liste : on charge cette page
+      if (event.page && event.page !== eventsStore.currentPage) {
+        eventsStore.goToPage(event.page)
+      }
     })
   })
 
   const hasActiveSearch = eventsStore.lastSearchParams.keyword || eventsStore.lastSearchParams.city
   if (hasActiveSearch && clusterGroup.getLayers().length > 0) {
+    programmaticMove = true
     map.fitBounds(clusterGroup.getBounds(), { padding: [50, 50], maxZoom: 14 })
+    setTimeout(() => (programmaticMove = false), 500)
   }
 }
 
 function onMapMoveEnd() {
+  // Déplacement fait par l'application : on ne relance pas de recherche
+  if (programmaticMove) return
+
   const hasActiveSearch = eventsStore.lastSearchParams.keyword || eventsStore.lastSearchParams.city
   if (hasActiveSearch) return
 
@@ -88,7 +100,10 @@ function initMap() {
   })
   map.addLayer(clusterGroup)
 
-  if (navigator.geolocation) {
+  // Pas de recentrage sur l'utilisateur si une recherche par mot-clé ou ville est en cours :
+  // la carte doit rester cadrée sur les résultats
+  const hasActiveSearch = eventsStore.lastSearchParams.keyword || eventsStore.lastSearchParams.city
+  if (navigator.geolocation && !hasActiveSearch) {
     locating.value = true
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -121,13 +136,13 @@ function initMap() {
 
 onMounted(() => {
   initMap()
-  if (eventsStore.events.length > 0) {
+  if (eventsStore.markers.length > 0) {
     addMarkers()
   }
 })
 
 watch(
-  () => eventsStore.events,
+  () => eventsStore.markers,
   () => {
     addMarkers()
   },
@@ -139,7 +154,13 @@ watch(
     if (!id || !clusterGroup) return
     const marker = clusterGroup.getLayers().find((m) => m.eventId === id)
     if (!marker) return
-    clusterGroup.zoomToShowLayer(marker, () => marker.openPopup())
+
+    programmaticMove = true
+    clusterGroup.zoomToShowLayer(marker, () => {
+      marker.openPopup()
+      // Laisse le temps aux évènements zoomend de passer avant de réactiver la recherche
+      setTimeout(() => (programmaticMove = false), 300)
+    })
   },
 )
 

@@ -1,16 +1,21 @@
 <script setup>
 import { ref } from 'vue'
 import { useEventsStore } from '@/stores/events'
+import { categoryLabel } from '@/utils/categories'
 import api from '@/axios'
 
 const eventsStore = useEventsStore()
 
-const keyword = ref('')
-const city = ref('')
-const category = ref('')
-const startDate = ref('')
-const endDate = ref('')
-const showFilters = ref(false)
+// Les champs reprennent la recherche en cours (par exemple lancée depuis l'historique du profil)
+const initial = eventsStore.lastSearchParams
+const keyword = ref(initial.keyword ?? '')
+const city = ref(initial.city ?? '')
+const category = ref(initial.category ?? '')
+const startDate = ref(initial.startDate ?? '')
+const endDate = ref(initial.endDate ?? '')
+const showFilters = ref(
+  !!(initial.city || initial.category || initial.startDate || initial.endDate),
+)
 
 const searchHistory = ref([])
 const showHistory = ref(false)
@@ -69,7 +74,7 @@ function formatHistoryEntry(entry) {
   const parts = []
   if (entry.keyword) parts.push(entry.keyword)
   if (entry.city) parts.push(entry.city)
-  if (entry.category) parts.push(entry.category)
+  if (entry.category) parts.push(categoryLabel(entry.category))
   if (entry.start_date || entry.end_date) {
     parts.push(`${entry.start_date ?? '...'} → ${entry.end_date ?? '...'}`)
   }

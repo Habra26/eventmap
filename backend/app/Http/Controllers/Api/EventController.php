@@ -116,8 +116,25 @@ class EventController extends Controller
 
         $paginated = $events->forPage($page, $perPage)->values();
 
+        // Tous les évènements de la zone, en version allégée, pour la carte.
+        // La page est calculée AVANT le filtre, pour correspondre à la pagination de la liste.
+        $markers = $events
+            ->map(fn($e, $index) => [
+                'id' => $e['id'],
+                'title' => $e['title'],
+                'date' => $e['date'],
+                'city' => $e['city'],
+                'latitude' => $e['latitude'],
+                'longitude' => $e['longitude'],
+                'image_url' => $e['image_url'],
+                'page' => intdiv($index, $perPage) + 1,
+            ])
+            ->filter(fn($e) => $e['latitude'] && $e['longitude'])
+            ->values();
+
         return response()->json([
             'data' => $paginated,
+            'markers' => $markers,
             'current_page' => $page,
             'per_page' => $perPage,
             'total' => $events->count(),
@@ -139,7 +156,10 @@ class EventController extends Controller
                 'id' => $id,
                 'source' => 'user',
                 'author' => $event->user?->name,
+                'is_owner' => auth('sanctum')->id() !== null && (int) auth('sanctum')->id() === (int) $event->user_id,
                 'title' => $event->title,
+                'date' => $event->date->format('Y-m-d'),
+                'time' => $event->time ? substr($event->time, 0, 5) : null,
                 'city' => $event->city,
                 'venue' => $event->venue,
                 'address' => $event->address,

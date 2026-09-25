@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, nextTick } from 'vue'
+import { onMounted, ref, nextTick, watch } from 'vue'
 import { useEventsStore } from '@/stores/events'
 import EventCard from '@/components/EventCard.vue'
 import MapView from '@/components/MapView.vue'
@@ -11,13 +11,31 @@ const eventsStore = useEventsStore()
 const activeTab = ref('list')
 
 onMounted(() => {
-  eventsStore.fetchEvents()
+  // Une recherche est déjà en cours (lancée depuis l'historique du profil) : on ne l'écrase pas
+  const p = eventsStore.lastSearchParams
+  const hasActiveFilters = p.keyword || p.city || p.category || p.startDate || p.endDate
+  if (!hasActiveFilters) {
+    eventsStore.fetchEvents()
+  }
 })
 
 function switchToMap() {
   activeTab.value = 'map'
   nextTick(() => window.dispatchEvent(new Event('resize')))
 }
+
+// Fait défiler la liste jusqu'à l'évènement sélectionné, s'il n'est pas déjà visible
+function scrollToSelected() {
+  const id = eventsStore.selectedEventId
+  if (!id) return
+  nextTick(() => {
+    document.getElementById(`event-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  })
+}
+
+// Quand un évènement est sélectionné (clic sur la carte), ou quand une nouvelle page de la liste est affichée
+watch(() => eventsStore.selectedEventId, scrollToSelected)
+watch(() => eventsStore.events, scrollToSelected)
 </script>
 
 <template>
@@ -66,7 +84,12 @@ function switchToMap() {
         </div>
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <EventCard v-for="event in eventsStore.events" :key="event.id" :event="event" />
+          <EventCard
+            v-for="event in eventsStore.events"
+            :key="event.id"
+            :id="`event-${event.id}`"
+            :event="event"
+          />
         </div>
         <div v-if="eventsStore.totalPages > 1" class="flex items-center justify-center gap-2 mt-6">
           <button

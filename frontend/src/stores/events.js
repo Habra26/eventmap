@@ -4,6 +4,7 @@ import api from '@/axios'
 
 export const useEventsStore = defineStore('events', () => {
   const events = ref([])
+  const markers = ref([])
   const loading = ref(false)
   const error = ref(null)
   const selectedEventId = ref(null)
@@ -16,13 +17,16 @@ export const useEventsStore = defineStore('events', () => {
     selectedEventId.value = id
   }
 
-  async function fetchEvents(params = {}) {
+  async function fetchEvents(params = {}, { keepMarkers = false } = {}) {
     loading.value = true
     error.value = null
     lastSearchParams.value = { ...params }
     try {
       const response = await api.get('/events', { params })
       events.value = response.data.data
+      if (!keepMarkers) {
+        markers.value = response.data.markers ?? response.data.data
+      }
       currentPage.value = response.data.current_page
       totalPages.value = response.data.last_page
       total.value = response.data.total
@@ -33,12 +37,14 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
+  // Changer de page ne change pas les marqueurs : la carte n'est pas redessinée
   function goToPage(page) {
-    fetchEvents({ ...lastSearchParams.value, page })
+    fetchEvents({ ...lastSearchParams.value, page }, { keepMarkers: true })
   }
 
   return {
     events,
+    markers,
     loading,
     error,
     fetchEvents,
