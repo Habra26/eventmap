@@ -5,6 +5,7 @@ import api from '@/axios'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toasts'
+import { categoryLabel } from '@/utils/categories'
 import Loader from '@/components/Loader.vue'
 import ErrorMessage from '@/components/ErrorMessage.vue'
 
@@ -17,6 +18,7 @@ const toastStore = useToastStore()
 const event = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const deleting = ref(false)
 
 const isFav = computed(() => (event.value ? favoritesStore.isFavorite(event.value.id) : false))
 
@@ -48,6 +50,22 @@ async function toggleFavorite() {
     toastStore.error('Une erreur est survenue')
   }
 }
+
+async function deleteEvent() {
+  if (!confirm(`Supprimer définitivement « ${event.value.title} » ?`)) return
+
+  deleting.value = true
+  try {
+    const numericId = event.value.id.replace('user-', '')
+    await api.delete(`/user-events/${numericId}`)
+    toastStore.success('Évènement supprimé')
+    router.push('/')
+  } catch (e) {
+    toastStore.error('Impossible de supprimer cet évènement')
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -71,7 +89,10 @@ async function toggleFavorite() {
           :alt="event.title"
           class="w-full h-72 object-cover rounded-2xl mb-6"
         />
-        <div v-else class="w-full h-72 bg-brand-50 rounded-2xl mb-6 flex items-center justify-center">
+        <div
+          v-else
+          class="w-full h-72 bg-brand-50 rounded-2xl mb-6 flex items-center justify-center"
+        >
           <i class="ti ti-calendar-event text-5xl text-brand-300"></i>
         </div>
 
@@ -88,20 +109,40 @@ async function toggleFavorite() {
         v-if="event.category"
         class="inline-block bg-brand-100 text-brand-800 text-xs font-medium px-3 py-1 rounded-full mb-3"
       >
-        {{ event.category }}
+        {{ categoryLabel(event.category) }}
       </span>
 
-      <h1 class="text-3xl font-bold text-brand-900 mb-4">{{ event.title }}</h1>
+      <h1 class="text-3xl font-bold text-brand-900 mb-2">{{ event.title }}</h1>
+
+      <p
+        v-if="event.source === 'user' && event.author"
+        class="flex items-center gap-2 text-sm text-gray-500 mb-4"
+      >
+        <i class="ti ti-user text-brand-600"></i>
+        Proposé par <span class="font-medium text-brand-700">{{ event.author }}</span>
+      </p>
+      <div v-else class="mb-2"></div>
+
+      <!-- Actions du créateur -->
+      <div v-if="event.is_owner" class="flex flex-wrap gap-2 mb-6">
+        <RouterLink
+          :to="`/events/${event.id}/edit`"
+          class="border border-gray-200 text-brand-800 hover:bg-gray-50 transition-colors px-4 py-2 rounded-xl text-sm flex items-center gap-1"
+        >
+          <i class="ti ti-pencil"></i> Modifier
+        </RouterLink>
+        <button
+          @click="deleteEvent"
+          :disabled="deleting"
+          class="border border-gray-200 text-accent-600 hover:bg-gray-50 transition-colors px-4 py-2 rounded-xl text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <i v-if="deleting" class="ti ti-loader animate-spin"></i>
+          <i v-else class="ti ti-trash"></i>
+          Supprimer
+        </button>
+      </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div class="flex items-center gap-2 text-gray-600">
-          <i class="ti ti-calendar text-brand-600"></i>
-          <span>{{ event.date ?? 'Date inconnue' }}</span>
-        </div>
-        <div class="flex items-center gap-2 text-gray-600">
-          <i class="ti ti-clock text-brand-600"></i>
-          <span>{{ event.time ?? 'Heure inconnue' }}</span>
-        </div>
         <div class="flex items-center gap-2 text-gray-600">
           <i class="ti ti-map-pin text-brand-600"></i>
           <span>{{ event.city ?? 'Ville inconnue' }}</span>
@@ -110,22 +151,49 @@ async function toggleFavorite() {
           <i class="ti ti-building text-brand-600"></i>
           <span>{{ event.venue ?? 'Lieu inconnu' }}</span>
         </div>
+        <div v-if="event.address" class="flex items-center gap-2 text-gray-600 sm:col-span-2">
+          <i class="ti ti-map-2 text-brand-600"></i>
+          <span>{{ event.address }}</span>
+        </div>
       </div>
 
       <p class="text-gray-600 leading-relaxed mb-6">
         {{ event.description ?? 'Aucune description disponible' }}
       </p>
 
-      <a
-        v-if="event.ticket_url"
-        :href="event.ticket_url"
-        target="_blank"
-        class="inline-flex items-center gap-2 bg-brand-900 text-white px-6 py-3 rounded-xl hover:bg-brand-800 transition-colors"
-      >
-        <i class="ti ti-ticket"></i> Acheter des billets
-      </a>
+      <!-- Évènement créé par un utilisateur : date simple, sans billetterie -->
+      <div v-if="event.source === 'user' && event.sub_events?.length" class="mb-6">
+        <h2 class="text-lg font-semibold text-brand-900 mb-2">Date</h2>
+        <div class="flex items-center gap-3 bg-brand-50 rounded-xl px-4 py-3">
+          <i class="ti ti-calendar-event text-brand-700 text-xl"></i>
+          <p class="font-medium text-gray-900">
+            {{ event.sub_events[0].date
+            }}<span v-if="event.sub_events[0].time"> à {{ event.sub_events[0].time }}</span>
+          </p>
+        </div>
+      </div>
 
-      <p class="text-xs text-gray-400 mt-6">
+      <!-- Évènement Ticketmaster : liste des dates avec lien vers la billetterie -->
+      <div v-else-if="event.sub_events?.length" class="space-y-2 mb-6">
+        <h2 class="text-lg font-semibold text-brand-900 mb-2">Tickets disponibles</h2>
+        <a
+          v-for="sub in event.sub_events"
+          :key="sub.id"
+          :href="sub.ticket_url"
+          target="_blank"
+          class="flex items-center justify-between bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl px-4 py-3"
+        >
+          <div>
+            <p class="font-medium text-gray-900">{{ sub.name }}</p>
+            <p class="text-sm text-gray-500">
+              {{ sub.date ?? 'Date inconnue' }}<span v-if="sub.time"> à {{ sub.time }}</span>
+            </p>
+          </div>
+          <i class="ti ti-ticket text-brand-700 text-xl"></i>
+        </a>
+      </div>
+
+      <p v-if="event.source !== 'user'" class="text-xs text-gray-400 mt-6">
         Données fournies par Ticketmaster
       </p>
     </div>

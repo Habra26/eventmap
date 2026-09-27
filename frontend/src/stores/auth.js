@@ -86,6 +86,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = () => !!token.value
 
+  function setAvatar(avatarPath) {
+    user.value = { ...user.value, avatar: avatarPath }
+    localStorage.setItem('user', JSON.stringify(user.value))
+  }
+
   return {
     user,
     token,
@@ -97,5 +102,6 @@ export const useAuthStore = defineStore('auth', () => {
     updatePassword,
     deleteAccount,
     isAuthenticated,
+    setAvatar,
   }
 })

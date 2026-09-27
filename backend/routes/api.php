@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SearchHistoryController;
+use App\Http\Controllers\Api\UserEventController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -20,11 +22,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/favorites', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{eventId}', [FavoriteController::class, 'destroy']);
 
+    Route::get('/my-events', [UserEventController::class, 'index']);
+    Route::post('/user-events', [UserEventController::class, 'store']);
+    Route::put('/user-events/{userEvent}', [UserEventController::class, 'update']);
+    Route::delete('/user-events/{userEvent}', [UserEventController::class, 'destroy']);
+
+    Route::get('/search-history', [SearchHistoryController::class, 'index']);
+    Route::post('/search-history', [SearchHistoryController::class, 'store']);
+    Route::delete('/search-history', [SearchHistoryController::class, 'destroy']);
+
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
     Route::delete('/profile', [ProfileController::class, 'destroy']);
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
 });
 
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{id}', [EventController::class, 'show']);
+
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);

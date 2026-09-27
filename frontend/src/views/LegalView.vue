@@ -46,9 +46,9 @@
     <section>
       <h2 class="text-lg font-semibold text-gray-900 mb-3">RGPD</h2>
       <p class="text-gray-600 leading-relaxed">
-        Conformément au RGPD, tu disposes d'un droit d'accès, de rectification et de suppression de
-        tes données personnelles. La suppression de ton compte entraîne l'effacement définitif de
-        toutes tes données.
+        Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de
+        vos données personnelles. La suppression de votre compte entraîne l'effacement définitif de
+        toutes vos données.
       </p>
     </section>
   </div>

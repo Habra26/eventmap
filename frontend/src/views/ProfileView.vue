@@ -3,6 +3,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toasts'
+import { useEventsStore } from '@/stores/events'
+import api from '@/axios'
+import { categoryLabel } from '@/utils/categories'
+
+const apiUrl = import.meta.env.VITE_API_URL
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -21,9 +26,33 @@ const passwordLoading = ref(false)
 
 const deleteLoading = ref(false)
 
-onMounted(() => {
+const searchHistory = ref([])
+const historyLoading = ref(true)
+
+const upcomingEventsCount = ref(0)
+const myEventsLoading = ref(true)
+
+const eventsStore = useEventsStore()
+
+onMounted(async () => {
   name.value = authStore.user?.name ?? ''
   email.value = authStore.user?.email ?? ''
+
+  try {
+    const response = await api.get('/search-history')
+    searchHistory.value = response.data
+  } catch (e) {
+  } finally {
+    historyLoading.value = false
+  }
+
+  try {
+    const response = await api.get('/my-events')
+    upcomingEventsCount.value = response.data.filter((e) => !e.is_past).length
+  } catch (e) {
+  } finally {
+    myEventsLoading.value = false
+  }
 })
 
 function validateProfile() {
@@ -102,6 +131,74 @@ async function deleteAccount() {
     deleteLoading.value = false
   }
 }
+
+function formatEntry(entry) {
+  const parts = []
+  if (entry.keyword) parts.push(entry.keyword)
+  if (entry.city) parts.push(entry.city)
+  if (entry.category) parts.push(categoryLabel(entry.category))
+  if (entry.start_date || entry.end_date) {
+    parts.push(`${entry.start_date ?? '...'} → ${entry.end_date ?? '...'}`)
+  }
+  return parts.length > 0 ? parts.join(' / ') : 'Recherche sans filtre'
+}
+
+async function clearHistory() {
+  if (!confirm('Vider tout ton historique de recherches ?')) return
+  try {
+    await api.delete('/search-history')
+    searchHistory.value = []
+    toastStore.success('Historique vidé')
+  } catch (e) {
+    toastStore.error("Erreur lors de la suppression de l'historique")
+  }
+}
+
+function rerunSearch(entry) {
+  const params = {}
+  if (entry.keyword) params.keyword = entry.keyword
+  if (entry.city) params.city = entry.city
+  if (entry.category) params.category = entry.category
+  if (entry.start_date) params.startDate = entry.start_date
+  if (entry.end_date) params.endDate = entry.end_date
+
+  eventsStore.fetchEvents(params)
+  router.push('/')
+}
+
+const avatarFile = ref(null)
+const avatarPreview = ref(null)
+const avatarLoading = ref(false)
+
+function handleAvatarChange(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+}
+
+async function uploadAvatar() {
+  if (!avatarFile.value) return
+
+  avatarLoading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('avatar', avatarFile.value)
+
+    const response = await api.post('/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    authStore.setAvatar(response.data.user.avatar)
+    toastStore.success('Photo de profil mise à jour')
+    avatarFile.value = null
+  } catch (e) {
+    toastStore.error(e.response?.data?.message ?? "Erreur lors de l'upload")
+  } finally {
+    avatarLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -110,6 +207,44 @@ async function deleteAccount() {
       <h1 class="text-3xl font-bold text-brand-900">Mon profil</h1>
       <p class="text-sm text-gray-500 mt-1">Gère tes informations personnelles</p>
     </div>
+
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Photo de profil</h2>
+
+      <div class="flex items-center gap-4">
+        <img
+          :src="
+            avatarPreview ||
+            (authStore.user?.avatar ? `${apiUrl}/storage/${authStore.user.avatar}` : null)
+          "
+          v-if="avatarPreview || authStore.user?.avatar"
+          class="w-20 h-20 rounded-full object-cover border border-gray-200"
+        />
+        <div
+          v-else
+          class="w-20 h-20 rounded-full bg-brand-50 flex items-center justify-center text-2xl text-brand-300"
+        >
+          <i class="ti ti-user"></i>
+        </div>
+
+        <div>
+          <input
+            type="file"
+            accept="image/*"
+            @change="handleAvatarChange"
+            class="text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 file:cursor-pointer cursor-pointer"
+          />
+          <button
+            v-if="avatarFile"
+            @click="uploadAvatar"
+            :disabled="avatarLoading"
+            class="block bg-brand-900 text-white text-sm px-4 py-2 rounded-xl hover:bg-brand-800 transition-colors disabled:opacity-60"
+          >
+            {{ avatarLoading ? 'Envoi...' : 'Enregistrer la photo' }}
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- Infos personnelles -->
     <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
@@ -147,6 +282,65 @@ async function deleteAccount() {
         <i v-if="profileLoading" class="ti ti-loader animate-spin"></i>
         {{ profileLoading ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
+    </section>
+
+    <!-- Mes évènements -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Mes évènements</h2>
+
+      <p v-if="myEventsLoading" class="text-sm text-gray-500">Chargement...</p>
+      <RouterLink
+        v-else-if="upcomingEventsCount > 0"
+        to="/my-events"
+        class="flex items-center justify-between bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl px-4 py-3 text-sm"
+      >
+        <span class="text-gray-700 flex items-center gap-2">
+          <i class="ti ti-calendar-event text-brand-600"></i>
+          {{ upcomingEventsCount }} évènement{{ upcomingEventsCount > 1 ? 's' : '' }} à venir
+        </span>
+        <span class="text-brand-700 font-medium flex items-center gap-1">
+          Gérer <i class="ti ti-arrow-right"></i>
+        </span>
+      </RouterLink>
+      <div v-else class="flex items-center justify-between gap-4">
+        <p class="text-sm text-gray-500">Tu n'as aucun évènement à venir.</p>
+        <RouterLink
+          to="/my-events"
+          class="text-sm text-brand-700 hover:text-brand-900 transition-colors flex items-center gap-1 whitespace-nowrap"
+        >
+          Voir mes évènements <i class="ti ti-arrow-right"></i>
+        </RouterLink>
+      </div>
+    </section>
+
+    <!-- Historique de recherche -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900">Historique des recherches</h2>
+        <button
+          v-if="searchHistory.length > 0"
+          @click="clearHistory"
+          class="text-xs text-gray-400 hover:text-accent-600 transition-colors"
+        >
+          Vider l'historique
+        </button>
+      </div>
+
+      <p v-if="historyLoading" class="text-sm text-gray-500">Chargement...</p>
+      <p v-else-if="searchHistory.length === 0" class="text-sm text-gray-500">
+        Aucune recherche récente
+      </p>
+      <ul v-else class="space-y-2">
+        <li
+          v-for="entry in searchHistory"
+          :key="entry.id"
+          @click="rerunSearch(entry)"
+          class="flex items-center justify-between bg-brand-50 hover:bg-brand-100 transition-colors rounded-xl px-4 py-3 text-sm cursor-pointer"
+        >
+          <span class="text-gray-700">{{ formatEntry(entry) }}</span>
+          <i class="ti ti-search text-brand-600"></i>
+        </li>
+      </ul>
     </section>
 
     <!-- Mot de passe -->
@@ -213,7 +407,8 @@ async function deleteAccount() {
     <section class="bg-white rounded-2xl shadow-sm border border-red-100 p-6">
       <h2 class="text-lg font-semibold mb-2 text-red-600">Zone dangereuse</h2>
       <p class="text-sm text-gray-500 mb-4">
-        La suppression de ton compte est définitive et supprime tous tes favoris.
+        La suppression de ton compte est définitive et supprime tous tes favoris et tous les
+        évènements que tu as créés.
       </p>
       <button
         @click="deleteAccount"
