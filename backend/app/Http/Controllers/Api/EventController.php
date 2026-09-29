@@ -7,9 +7,13 @@ use App\Models\UserEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Client\ConnectionException;
 
 class EventController extends Controller
 {
+    // Limite le nombre d'appels à Nominatim par requête, pour ne pas dépasser le délai maximal de PHP
+    private const MAX_GEOCODE_CALLS = 5;
+    private int $geocodeCalls = 0;
     private function httpClient()
     {
         return app()->environment('local') ? Http::withoutVerifying() : Http::withOptions([]);
@@ -56,7 +60,11 @@ class EventController extends Controller
         $ticketmasterEvents = Cache::get($cacheKey);
 
         if ($ticketmasterEvents === null) {
-            $response = $this->httpClient()->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
+            try {
+                $response = $this->httpClient()->timeout(15)->get('https://app.ticketmaster.com/discovery/v2/events.json', $params);
+            } catch (ConnectionException $e) {
+                return response()->json(['error' => 'API Ticketmaster indisponible'], 503);
+            }
 
             if ($response->failed()) {
                 return response()->json(['error' => 'API Ticketmaster indisponible'], 503);
