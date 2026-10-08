@@ -28,18 +28,24 @@
         <li>Nom</li>
         <li>Adresse email</li>
         <li>Mot de passe (stocké de manière sécurisée et hashée)</li>
+        <li>Photo de profil (facultative)</li>
+        <li>Évènements favoris et historique des recherches</li>
+        <li>Évènements créés (titre, description, adresse, image)</li>
       </ul>
       <p class="text-gray-600 leading-relaxed mt-3">
-        Aucune donnée n'est partagée avec des tiers. Les données sont conservées jusqu'à la
-        suppression du compte, possible à tout moment depuis la page profil.
+        Aucune donnée n'est vendue ni utilisée à des fins commerciales. L'adresse email est
+        uniquement transmise au service d'envoi d'emails Resend, pour l'envoi du lien de
+        réinitialisation du mot de passe. Les données sont conservées jusqu'à la suppression du
+        compte, possible à tout moment depuis la page profil.
       </p>
     </section>
 
     <section class="mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 mb-3">Cookies et sessions</h2>
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">Stockage local et sessions</h2>
       <p class="text-gray-600 leading-relaxed">
-        L'application utilise des cookies de session via Laravel Sanctum pour l'authentification.
-        Aucun cookie de tracking ou publicitaire n'est utilisé.
+        Lors de la connexion, un jeton d'authentification est enregistré dans le stockage local
+        (localStorage) du navigateur. Il est strictement nécessaire au fonctionnement du compte et
+        est supprimé à la déconnexion. Aucun cookie de suivi ou publicitaire n'est utilisé.
       </p>
     </section>
 
